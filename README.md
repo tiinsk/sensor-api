@@ -17,7 +17,15 @@ REST API for sensor data collection and retrieval, built with AWS Lambda and Dyn
 npm install
 ```
 
-### 2. Start DynamoDB Local
+### 2. Create `.env.local` file
+
+```bash
+cp .env.local.example .env.local
+```
+
+Default values work for local development.
+
+### 3. Start DynamoDB Local
 
 ```bash
 npm run dynamodb:start
@@ -27,14 +35,14 @@ This starts:
 - DynamoDB Local on `http://localhost:8000`
 - DynamoDB Admin UI on `http://localhost:8001` (optional web interface)
 
-### 3. Create tables locally
+### 4. Create tables locally
 
 ```bash
 npm run build
 npm run tables:create
 ```
 
-### 4. Seed test data (optional)
+### 5. Seed test data (optional)
 
 ```bash
 npm run seed:local
@@ -46,7 +54,7 @@ This creates:
 - 1 test user (`testuser` / `testpassword`)
 - 1 test API key (`test-api-key-12345`)
 
-### 5. Stop DynamoDB Local
+### 6. Stop DynamoDB Local
 
 ```bash
 npm run dynamodb:stop
@@ -100,3 +108,37 @@ sensor-api/
 ## Deployment
 
 *Coming soon*
+
+---
+
+## TODO / Technical Debt
+
+### High Priority
+
+- [ ] **Replace offset pagination with cursor-based pagination**
+  - Current: Uses `limit + offset` (scans extra items, inefficient)
+  - Target: Use `LastEvaluatedKey` / `ExclusiveStartKey` (DynamoDB native)
+  - Impact: Requires frontend changes to handle cursor tokens instead of page numbers
+  - Files: `src/data/devices.ts`, API response format, frontend pagination
+  - Changes to be made:
+    - Current:
+      - GET /api/devices?limit=10
+        → Returns: { items: [...], nextToken: "abc123" }
+    - Change:
+      - GET /api/devices?limit=10&nextToken=abc123 → Returns next page
+
+### Medium Priority
+
+*None yet*
+
+### Low Priority / Nice to Have
+
+*None yet*
+
+---
+
+## Notes
+
+- Items marked with ☑ are completed
+- Add new items as they come up during development
+- Prioritize before implementing
