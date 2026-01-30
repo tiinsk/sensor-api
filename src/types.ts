@@ -23,6 +23,17 @@ export interface Device {
   type: DeviceType;
   location: DeviceLocation;
   disabled: boolean;
+  sensorInfo?: string;
+  latestReadingId?: string; // Timestamp of the most recent reading
+}
+
+export interface Reading {
+  deviceId: string;
+  timestamp: string; // ISO 8601 timestamp (used as sort key)
+  temperature: number | null;
+  humidity: number | null;
+  pressure: number | null;
+  battery: number | null;
 }
 
 export interface DeviceError {
