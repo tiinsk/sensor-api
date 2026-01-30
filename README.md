@@ -129,7 +129,11 @@ sensor-api/
 
 ### Medium Priority
 
-*None yet*
+- [ ] **Optimize time-based aggregation for readings**
+  - Current: Query all readings, aggregate in Lambda code (slow for large datasets)
+  - Target: Pre-aggregate data into summary tables or use DynamoDB Streams
+  - Impact: Better performance for statistics/readings endpoints with long time ranges
+  - Files: `src/data/readings.ts`, potentially new aggregation tables
 
 ### Low Priority / Nice to Have
 
