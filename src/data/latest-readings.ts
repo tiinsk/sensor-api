@@ -1,6 +1,6 @@
 import { DynamoDBDocumentClient, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
-import { createDynamoDBClient } from '../lib/db-client.js';
-import { ArrayRequestParams, Device, Reading } from '../types.js';
+import { createDynamoDBClient } from '../lib/db-client';
+import { ArrayRequestParams, Device, Reading } from '../types';
 
 const docClient = createDynamoDBClient();
 const devicesTableName = process.env.DEVICES_TABLE || 'SensorApi-Devices';

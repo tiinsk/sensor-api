@@ -1,6 +1,6 @@
 import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb';
-import { tableSchemas } from '../src/config/table-schemas.js';
-import { toCreateTableInput } from '../src/config/table-mappers.js';
+import { tableSchemas } from '../src/config/table-schemas';
+import { toCreateTableInput } from '../src/config/table-mappers';
 
 const client = new DynamoDBClient({
   endpoint: 'http://localhost:8000',

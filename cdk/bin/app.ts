@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { DynamoDBStack } from '../lib/dynamodb-stack.js';
+import { DynamoDBStack } from '../lib/dynamodb-stack';
 
 const app = new cdk.App();
 

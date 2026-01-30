@@ -1,8 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { Construct } from 'constructs';
-import { tableSchemas } from '../../src/config/table-schemas.js';
-import { toCdkTableProps, toCdkGsiProps } from '../../src/config/table-mappers.js';
+import { tableSchemas } from '../../src/config/table-schemas';
+import { toCdkTableProps, toCdkGsiProps } from '../../src/config/table-mappers';
 
 export class DynamoDBStack extends cdk.Stack {
   public readonly devicesTable: dynamodb.Table;

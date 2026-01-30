@@ -3,8 +3,8 @@
  */
 
 import { QueryCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { createDynamoDBClient } from '../lib/db-client.js';
-import { getDevice } from './devices.js';
+import { createDynamoDBClient } from '../lib/db-client';
+import { getDevice } from './devices';
 
 const docClient = createDynamoDBClient();
 const READINGS_TABLE = process.env.READINGS_TABLE || 'SensorApi-Readings';
