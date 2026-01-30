@@ -1,6 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import { Construct } from 'constructs';
+import { tableSchemas } from '../../src/config/table-schemas.js';
+import { toCdkTableProps, toCdkGsiProps } from '../../src/config/table-mappers.js';
 
 export class DynamoDBStack extends cdk.Stack {
   public readonly devicesTable: dynamodb.Table;
@@ -12,65 +14,41 @@ export class DynamoDBStack extends cdk.Stack {
     super(scope, id, props);
 
     // Devices Table
+    const devicesProps = toCdkTableProps(tableSchemas.devices);
     this.devicesTable = new dynamodb.Table(this, 'DevicesTable', {
-      tableName: 'SensorApi-Devices',
-      partitionKey: {
-        name: 'id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, // On-demand pricing
+      ...devicesProps,
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep table if stack is deleted
     });
 
-    // GSI for listing devices by order
-    this.devicesTable.addGlobalSecondaryIndex({
-      indexName: 'type-order-index',
-      partitionKey: {
-        name: 'type',
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: 'order',
-        type: dynamodb.AttributeType.NUMBER,
-      },
-      projectionType: dynamodb.ProjectionType.ALL,
+    // Add GSI for devices
+    const devicesGsis = toCdkGsiProps(tableSchemas.devices);
+    devicesGsis.forEach((gsi) => {
+      this.devicesTable.addGlobalSecondaryIndex(gsi);
     });
 
     // Readings Table
+    const readingsProps = toCdkTableProps(tableSchemas.readings);
     this.readingsTable = new dynamodb.Table(this, 'ReadingsTable', {
-      tableName: 'SensorApi-Readings',
-      partitionKey: {
-        name: 'device_id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      sortKey: {
-        name: 'timestamp',
-        type: dynamodb.AttributeType.STRING, // ISO timestamp string
-      },
+      ...readingsProps,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep table if stack is deleted
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     // Users Table
+    const usersProps = toCdkTableProps(tableSchemas.users);
     this.usersTable = new dynamodb.Table(this, 'UsersTable', {
-      tableName: 'SensorApi-Users',
-      partitionKey: {
-        name: 'username',
-        type: dynamodb.AttributeType.STRING,
-      },
+      ...usersProps,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep table if stack is deleted
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     // Auth/API Keys Table
+    const authProps = toCdkTableProps(tableSchemas.auth);
     this.authTable = new dynamodb.Table(this, 'AuthTable', {
-      tableName: 'SensorApi-Auth',
-      partitionKey: {
-        name: 'api_key',
-        type: dynamodb.AttributeType.STRING,
-      },
+      ...authProps,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN, // Keep table if stack is deleted
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     // CloudFormation Outputs
