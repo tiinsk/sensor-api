@@ -36,6 +36,19 @@ export interface Reading {
   battery: number | null;
 }
 
+export interface User {
+  username: string;
+  passwordHash: string;
+  salt: string;
+  disabled: boolean;
+}
+
+export interface ApiKey {
+  apiKey: string;
+  deviceId?: string | null;
+  description: string;
+}
+
 export interface DeviceError {
   error: string;
   statusCode: number;

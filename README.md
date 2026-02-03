@@ -82,6 +82,24 @@ npm run dynamodb:stop
 | **Users** | User credentials | `username` | - |
 | **Auth** | API keys | `api_key` | - |
 
+## Authentication
+
+The API supports two authentication methods:
+
+### 1. User Authentication (Username/Password)
+
+Home monitor website uses user authentication.
+
+### 2. API Key Authentication
+
+Raspberry sends sensor data with authentication API key.
+
+
+### Environment Variables
+
+- `JWT_SECRET` - Secret key for signing JWT tokens (change in production!)
+- Default development secret is in `.env.local.example`
+
 ## Project Structure
 
 ```
@@ -134,6 +152,7 @@ sensor-api/
   - Target: Pre-aggregate data into summary tables or use DynamoDB Streams
   - Impact: Better performance for statistics/readings endpoints with long time ranges
   - Files: `src/data/readings.ts`, potentially new aggregation tables
+- [ ] **Remove all code related to device specific API keys (not in user anymore)**
 
 ### Low Priority / Nice to Have
 
