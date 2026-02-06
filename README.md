@@ -121,11 +121,89 @@ sensor-api/
 
 ## API Endpoints
 
-*Coming soon*
+All endpoints require authentication (JWT token in `Authorization: Bearer <token>` header) except for `/` and `/api/login`.
+
+### Auth
+- `POST /api/login` - Login with username/password
+
+### Devices
+- `GET /api/devices` - Get all devices
+- `GET /api/devices/:id` - Get single device
+- `POST /api/devices` - Create new device
+- `PUT /api/devices/:id` - Update device
+
+### Readings
+- `GET /api/devices/:id/readings` - Get readings for a device
+- `GET /api/readings` - Get readings for all devices
+- `POST /api/devices/:id/readings` - Add new reading
+
+### Latest Readings
+- `GET /api/latest` - Get latest readings for all devices
+- `GET /api/devices/:id/latest` - Get latest reading for a device
+
+### Statistics
+- `GET /api/statistics` - Get statistics for all devices
+- `GET /api/devices/:id/statistics` - Get statistics for a device
 
 ## Deployment
 
-*Coming soon*
+### Prerequisites
+- AWS CLI configured with credentials
+- AWS account with permissions to create Lambda, API Gateway, DynamoDB
+
+### Deploy to AWS
+
+1. **Set JWT Secret** (recommended for production):
+   ```bash
+   export JWT_SECRET="your-secure-secret-key"
+   ```
+
+2. **Build the project**:
+   ```bash
+   npm run build
+   ```
+
+3. **Synthesize CDK stacks** (optional - to preview):
+   ```bash
+   npm run cdk:synth
+   ```
+
+4. **Deploy all stacks**:
+   ```bash
+   npm run cdk:deploy
+   ```
+   
+   This will create:
+   - DynamoDB tables (Devices, Readings, Users, Auth)
+   - Lambda function with your API code
+   - API Gateway HTTP API endpoint
+   - CloudWatch Logs
+   - IAM roles and permissions
+
+5. **Note the API URL** from the deployment output:
+   ```
+   Outputs:
+   SensorApiStack.ApiUrl = https://abc123.execute-api.us-east-1.amazonaws.com
+   ```
+
+### Update Deployment
+
+After making code changes:
+
+```bash
+npm run build
+npm run cdk:deploy
+```
+
+### Destroy Resources
+
+To remove all AWS resources:
+
+```bash
+npm run cdk:destroy
+```
+
+**Note:** DynamoDB tables use `RemovalPolicy.RETAIN`, so they won't be deleted automatically. You'll need to manually delete them from the AWS Console if desired.
 
 ---
 
