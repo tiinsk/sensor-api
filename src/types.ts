@@ -48,8 +48,3 @@ export interface ApiKey {
   deviceId?: string | null;
   description: string;
 }
-
-export interface DeviceError {
-  error: string;
-  statusCode: number;
-}

@@ -4,7 +4,8 @@
 
 import { ScanCommand, QueryCommand, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
-import type { Device, DeviceError, ArrayRequestParams } from '../types';
+import type { Device, ArrayRequestParams } from '../types';
+import { NotFoundError, ConflictError } from '../lib/errors';
 
 const docClient = createDynamoDBClient();
 const TABLE_NAME = process.env.DEVICES_TABLE || 'SensorApi-Devices';
@@ -80,12 +81,25 @@ export async function getAllDevices(params: ArrayRequestParams & { includeDisabl
 }
 
 /**
+ * Check if a device exists (returns boolean)
+ */
+async function deviceExists(deviceId: string): Promise<boolean> {
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: TABLE_NAME,
+      Key: { id: deviceId },
+    })
+  );
+  return !!result.Item;
+}
+
+/**
  * Get single device by ID
  */
 export async function getDevice(
   deviceId: string,
   includeDisabled = false
-): Promise<Device | DeviceError> {
+): Promise<Device> {
   const result = await docClient.send(
     new GetCommand({
       TableName: TABLE_NAME,
@@ -94,17 +108,11 @@ export async function getDevice(
   );
 
   if (!result.Item) {
-    return {
-      error: `Device with id ${deviceId} not found`,
-      statusCode: 404,
-    };
+    throw new NotFoundError(`Device with id ${deviceId} not found`);
   }
 
   if (!includeDisabled && result.Item.disabled) {
-    return {
-      error: `Device with id ${deviceId} not found`,
-      statusCode: 404,
-    };
+    throw new NotFoundError(`Device with id ${deviceId} not found`);
   }
 
   return mapToDevice(result.Item);
@@ -113,24 +121,18 @@ export async function getDevice(
 /**
  * Add new device
  */
-export async function addDevice(device: Device): Promise<Device | DeviceError> {
+export async function addDevice(device: Device): Promise<Device> {
   // Check if device already exists
-  const existing = await getDevice(device.id, true);
-  if (!('error' in existing)) {
-    return {
-      error: `Device with id ${device.id} already exists`,
-      statusCode: 409,
-    };
+  const exists = await deviceExists(device.id);
+  if (exists) {
+    throw new ConflictError(`Device with id ${device.id} already exists`);
   }
 
   // Check if order is already taken
   const allDevices = await getAllDevices({ limit: 1000, offset: 0, includeDisabled: true });
   const orderExists = allDevices.values.some((d) => d.order === device.order);
   if (orderExists) {
-    return {
-      error: `Device with order ${device.order} already exists`,
-      statusCode: 409,
-    };
+    throw new ConflictError(`Device with order ${device.order} already exists`);
   }
 
   // Add device
@@ -148,30 +150,33 @@ export async function addDevice(device: Device): Promise<Device | DeviceError> {
 /**
  * Update existing device
  */
-export async function updateDevice(device: Device): Promise<Device | DeviceError> {
-  // Check if device exists
-  const existing = await getDevice(device.id, true);
-  if ('error' in existing) {
-    return {
-      error: `Device with id ${device.id} doesn't exist`,
-      statusCode: 409,
-    };
-  }
+export async function updateDevice(
+  deviceId: string,
+  updates: Partial<Omit<Device, 'id'>>
+): Promise<Device> {
+  // Check if device exists (will throw NotFoundError if not found)
+  const existing = await getDevice(deviceId, true);
 
   // Check if new order conflicts with another device
-  const allDevices = await getAllDevices({ limit: 1000, offset: 0, includeDisabled: true });
-  const orderConflict = allDevices.values.some(
-    (d) => d.id !== device.id && d.order === device.order
-  );
-  if (orderConflict) {
-    return {
-      error: `Device with order ${device.order} already exists`,
-      statusCode: 409,
-    };
+  if (updates.order !== undefined) {
+    const allDevices = await getAllDevices({ limit: 1000, offset: 0, includeDisabled: true });
+    const orderConflict = allDevices.values.some(
+      (d) => d.id !== deviceId && d.order === updates.order
+    );
+    if (orderConflict) {
+      throw new ConflictError(`Device with order ${updates.order} already exists`);
+    }
   }
 
-  // Update device
-  const item = mapToDynamoItem(device);
+  // Merge updates with existing device
+  const updatedDevice: Device = {
+    ...existing,
+    ...updates,
+    id: deviceId, // Ensure ID doesn't change
+  };
+
+  // Update device in DynamoDB
+  const item = mapToDynamoItem(updatedDevice);
   await docClient.send(
     new PutCommand({
       TableName: TABLE_NAME,
@@ -179,5 +184,5 @@ export async function updateDevice(device: Device): Promise<Device | DeviceError
     })
   );
 
-  return device;
+  return updatedDevice;
 }

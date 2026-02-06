@@ -1,6 +1,7 @@
 import { DynamoDBDocumentClient, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Device, Reading } from '../types';
+import { NotFoundError } from '../lib/errors';
 
 const docClient = createDynamoDBClient();
 const devicesTableName = process.env.DEVICES_TABLE || 'SensorApi-Devices';
@@ -113,7 +114,7 @@ export async function getDeviceLatestReading(deviceId: string) {
     );
 
     if (!deviceResult.Item) {
-      throw new Error(`Device with id ${deviceId} not found`);
+      throw new NotFoundError(`Device with id ${deviceId} not found`);
     }
 
     const device = deviceResult.Item as Device;

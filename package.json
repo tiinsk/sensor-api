@@ -24,6 +24,7 @@
     "constructs": "^10.4.2",
     "dotenv": "^16.4.7",
     "jsonwebtoken": "^9.0.2",
+    "lambda-api": "^1.0.3",
     "zod": "^3.24.1"
   },
   "devDependencies": {
