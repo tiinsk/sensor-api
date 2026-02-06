@@ -4,9 +4,10 @@
 
 import { GetCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
+import { env } from '../lib/env';
 
 const docClient = createDynamoDBClient();
-const TABLE_NAME = process.env.AUTH_TABLE || 'SensorApi-Auth';
+const TABLE_NAME = env.AUTH_TABLE;
 
 export interface ApiKey {
   apiKey: string;

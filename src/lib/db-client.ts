@@ -5,9 +5,10 @@
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { env } from './env';
 
 export function createDynamoDBClient(): DynamoDBDocumentClient {
-  const isLocal = process.env.IS_LOCAL === 'true';
+  const isLocal = env.IS_LOCAL === 'true';
 
   const client = new DynamoDBClient(
     isLocal
@@ -20,7 +21,7 @@ export function createDynamoDBClient(): DynamoDBDocumentClient {
           },
         }
       : {
-          region: process.env.AWS_REGION || 'us-east-1',
+          region: env.AWS_REGION,
         }
   );
 

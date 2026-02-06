@@ -2,9 +2,10 @@ import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Reading } from '../types';
 import { getAllDevices } from './devices';
+import { env } from '../lib/env';
 
 const docClient = createDynamoDBClient();
-const readingsTableName = process.env.READINGS_TABLE || 'SensorApi-Readings';
+const readingsTableName = env.READINGS_TABLE;
 
 interface Statistics {
   temperature: {

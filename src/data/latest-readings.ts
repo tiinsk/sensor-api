@@ -2,10 +2,11 @@ import { DynamoDBDocumentClient, QueryCommand, GetCommand } from '@aws-sdk/lib-d
 import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Device, Reading } from '../types';
 import { NotFoundError } from '../lib/errors';
+import { env } from '../lib/env';
 
 const docClient = createDynamoDBClient();
-const devicesTableName = process.env.DEVICES_TABLE || 'SensorApi-Devices';
-const readingsTableName = process.env.READINGS_TABLE || 'SensorApi-Readings';
+const devicesTableName = env.DEVICES_TABLE;
+const readingsTableName = env.READINGS_TABLE;
 
 interface DeviceWithReading extends Device {
   reading: Reading | null;

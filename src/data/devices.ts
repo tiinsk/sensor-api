@@ -6,9 +6,10 @@ import { ScanCommand, QueryCommand, GetCommand, PutCommand, UpdateCommand } from
 import { createDynamoDBClient } from '../lib/db-client';
 import type { Device, ArrayRequestParams } from '../types';
 import { NotFoundError, ConflictError } from '../lib/errors';
+import { env } from '../lib/env';
 
 const docClient = createDynamoDBClient();
-const TABLE_NAME = process.env.DEVICES_TABLE || 'SensorApi-Devices';
+const TABLE_NAME = env.DEVICES_TABLE;
 
 /**
  * Map DynamoDB item to Device type

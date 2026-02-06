@@ -4,9 +4,10 @@
 
 import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
+import { env } from '../lib/env';
 
 const docClient = createDynamoDBClient();
-const TABLE_NAME = process.env.USERS_TABLE || 'SensorApi-Users';
+const TABLE_NAME = env.USERS_TABLE;
 
 export interface User {
   username: string;

@@ -5,9 +5,10 @@
 import { QueryCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { getDevice } from './devices';
+import { env } from '../lib/env';
 
 const docClient = createDynamoDBClient();
-const READINGS_TABLE = process.env.READINGS_TABLE || 'SensorApi-Readings';
+const READINGS_TABLE = env.READINGS_TABLE;
 const DEVICES_TABLE = process.env.DEVICES_TABLE || 'SensorApi-Devices';
 
 export type ReadingType = 'temperature' | 'humidity' | 'pressure' | 'lux' | 'battery';

@@ -5,11 +5,22 @@ import { ApiStack } from '../lib/api-stack';
 
 const app = new cdk.App();
 
-// Get JWT secret from context or environment variable or use default for development
+// Get JWT secret from context or environment variable (REQUIRED)
 const jwtSecret = 
   app.node.tryGetContext('jwtSecret') || 
-  process.env.JWT_SECRET || 
-  'change-this-in-production';
+  process.env.JWT_SECRET;
+
+if (!jwtSecret) {
+  console.error('\n❌ ERROR: JWT_SECRET is required for deployment!');
+  console.error('\nProvide it in one of these ways:');
+  console.error('  1. Export as environment variable:');
+  console.error('     export JWT_SECRET="your-secure-secret-key"');
+  console.error('     npm run cdk:deploy');
+  console.error('\n  2. Pass as CDK context:');
+  console.error('     npm run cdk:deploy -- --context jwtSecret="your-secure-secret-key"');
+  console.error('\n💡 Tip: Generate a secure secret with: openssl rand -base64 32\n');
+  process.exit(1);
+}
 
 const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT,

@@ -23,7 +23,19 @@ npm install
 cp .env.local.example .env.local
 ```
 
-Default values work for local development.
+**Important:** All required environment variables MUST be set. The application will fail with a clear error message if any are missing.
+
+**Required variables:**
+- `JWT_SECRET` - Secret key for JWT tokens
+- `DEVICES_TABLE` - DynamoDB Devices table name
+- `READINGS_TABLE` - DynamoDB Readings table name  
+- `USERS_TABLE` - DynamoDB Users table name
+- `AUTH_TABLE` - DynamoDB Auth table name
+- `AWS_REGION` - AWS region (e.g., `us-east-1`)
+
+**Optional variables:**
+- `IS_LOCAL` - Set to `true` for local DynamoDB (default: `false`)
+- `NODE_ENV` - Environment mode (default: `development`)
 
 ### 3. Start DynamoDB Local
 
@@ -153,9 +165,24 @@ All endpoints require authentication (JWT token in `Authorization: Bearer <token
 
 ### Deploy to AWS
 
-1. **Set JWT Secret** (recommended for production):
+1. **Set JWT Secret** (REQUIRED):
+   
+   The deployment will fail if `JWT_SECRET` is not provided. Choose one method:
+   
+   **Option A: Environment variable**
    ```bash
    export JWT_SECRET="your-secure-secret-key"
+   npm run cdk:deploy
+   ```
+   
+   **Option B: CDK context**
+   ```bash
+   npm run cdk:deploy -- --context jwtSecret="your-secure-secret-key"
+   ```
+   
+   **Generate a secure secret:**
+   ```bash
+   openssl rand -base64 32
    ```
 
 2. **Build the project**:
@@ -222,6 +249,30 @@ npm run cdk:destroy
         → Returns: { items: [...], nextToken: "abc123" }
     - Change:
       - GET /api/devices?limit=10&nextToken=abc123 → Returns next page
+
+- [ ] **Security Best Practice: Use AWS Secrets Manager for JWT_SECRET**
+  - Current: `JWT_SECRET` stored as Lambda environment variable (visible in AWS Console)
+  - Target: Store in AWS Secrets Manager and retrieve at runtime
+  - Benefits: Automatic rotation, audit logging, encryption at rest, fine-grained access control
+  - Cost: ~$0.40/month per secret + $0.05 per 10,000 API calls
+  - Implementation example:
+    ```typescript
+    // In CDK (cdk/lib/api-stack.ts):
+    import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+    
+    const jwtSecret = secretsmanager.Secret.fromSecretNameV2(
+      this, 
+      'JwtSecret', 
+      'sensor-api/jwt-secret'
+    );
+    
+    // Grant Lambda read access
+    jwtSecret.grantRead(apiLambda);
+    
+    // In Lambda code (src/lib/jwt.ts):
+    // Use AWS SDK to retrieve secret value at runtime
+    ```
+  - Files: `cdk/lib/api-stack.ts`, `src/lib/jwt.ts`, `src/lib/env.ts`
 
 ### Medium Priority
 

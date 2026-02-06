@@ -3,8 +3,9 @@
  */
 
 import jwt from 'jsonwebtoken';
+import { env } from './env';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change-this-in-production';
+const JWT_SECRET = env.JWT_SECRET;
 
 // Token expiration times (in seconds)
 const API_KEY_TOKEN_EXPIRATION = 60 * 60 * 24 * 60; // 60 days
