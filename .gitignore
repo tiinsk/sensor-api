@@ -8,10 +8,15 @@ dist/
 cdk.out/
 .cdk.staging/
 
+# SAM output
+.aws-sam/
+samconfig.toml
+
 # Environment variables
 .env.local
 .env
 !.env.local.example
+env.json
 
 # IDE
 .vscode/

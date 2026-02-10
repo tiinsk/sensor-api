@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import crypto from 'crypto';
+import { TABLES } from '../src/config/constants';
 
 const client = new DynamoDBClient({
   endpoint: 'http://localhost:8000',
@@ -37,7 +38,7 @@ async function seedData() {
     
     await docClient.send(
       new PutCommand({
-        TableName: 'SensorApi-Readings',
+        TableName: TABLES.READINGS,
         Item: {
           deviceId: 'device-001',
           timestamp: time.toISOString(),
@@ -51,7 +52,7 @@ async function seedData() {
     
     await docClient.send(
       new PutCommand({
-        TableName: 'SensorApi-Readings',
+        TableName: TABLES.READINGS,
         Item: {
           deviceId: 'device-002',
           timestamp: time.toISOString(),
@@ -115,7 +116,7 @@ async function seedData() {
   for (const device of devices) {
     await docClient.send(
       new PutCommand({
-        TableName: 'SensorApi-Devices',
+        TableName: TABLES.DEVICES,
         Item: device,
       })
     );
@@ -128,7 +129,7 @@ async function seedData() {
   
   await docClient.send(
     new PutCommand({
-      TableName: 'SensorApi-Users',
+        TableName: TABLES.USERS,
       Item: {
         username: 'testuser',
         passwordHash: passwordHash,
@@ -142,7 +143,7 @@ async function seedData() {
   // Seed API Key
   await docClient.send(
     new PutCommand({
-      TableName: 'SensorApi-Auth',
+        TableName: TABLES.AUTH,
       Item: {
         apiKey: 'test-api-key-12345',
         deviceId: null,

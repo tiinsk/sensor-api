@@ -32,16 +32,10 @@ export class ApiStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
       environment: {
-        // DynamoDB table names
-        DEVICES_TABLE: dynamoDBStack.devicesTable.tableName,
-        READINGS_TABLE: dynamoDBStack.readingsTable.tableName,
-        USERS_TABLE: dynamoDBStack.usersTable.tableName,
-        AUTH_TABLE: dynamoDBStack.authTable.tableName,
-        
-        // Other config
         AWS_REGION: this.region,
         JWT_SECRET: jwtSecret,
         NODE_ENV: 'production',
+        USE_LOCAL_DB: 'false', // Always use AWS DynamoDB in deployed environment
       },
       logRetention: logs.RetentionDays.ONE_WEEK,
       description: 'Sensor API Lambda function with lambda-api routing',

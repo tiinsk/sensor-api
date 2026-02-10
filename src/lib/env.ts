@@ -1,75 +1,34 @@
 /**
  * Environment variable validation
- * Ensures all required environment variables are present at startup
+ * Single source of truth for environment validation logic
  */
+import { ENV_VARS } from '../config/env-schema';
 
-interface EnvironmentVariables {
-  // Required
-  JWT_SECRET: string;
-  DEVICES_TABLE: string;
-  READINGS_TABLE: string;
-  USERS_TABLE: string;
-  AUTH_TABLE: string;
-  AWS_REGION: string;
-  
-  // Optional
-  IS_LOCAL?: string;
-  NODE_ENV?: string;
-}
+function validateAndLoadEnv() {
+  // Validate required environment variables
+  const required = [ENV_VARS.JWT_SECRET, ENV_VARS.AWS_REGION, ENV_VARS.NODE_ENV];
+  const missing = required.filter(key => !process.env[key]);
 
-/**
- * Get and validate required environment variable
- */
-function getRequiredEnv(key: string): string {
-  const value = process.env[key];
-  if (!value) {
-    console.error(`❌ ERROR: Required environment variable "${key}" is not set!`);
-    console.error(`Please set it in your .env.local file or environment.`);
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-  return value;
-}
-
-/**
- * Get optional environment variable with default
- */
-function getOptionalEnv(key: string, defaultValue: string): string {
-  return process.env[key] || defaultValue;
-}
-
-/**
- * Validate and load all environment variables
- * Call this at application startup
- */
-export function loadEnvironment(): EnvironmentVariables {
-  console.log('🔍 Validating environment variables...');
-  
-  try {
-    const env: EnvironmentVariables = {
-      // Required variables
-      JWT_SECRET: getRequiredEnv('JWT_SECRET'),
-      DEVICES_TABLE: getRequiredEnv('DEVICES_TABLE'),
-      READINGS_TABLE: getRequiredEnv('READINGS_TABLE'),
-      USERS_TABLE: getRequiredEnv('USERS_TABLE'),
-      AUTH_TABLE: getRequiredEnv('AUTH_TABLE'),
-      AWS_REGION: getRequiredEnv('AWS_REGION'),
-      
-      // Optional variables
-      IS_LOCAL: getOptionalEnv('IS_LOCAL', 'false'),
-      NODE_ENV: getOptionalEnv('NODE_ENV', 'development'),
-    };
-    
-    console.log('✅ All required environment variables are set');
-    return env;
-  } catch (error) {
-    console.error('\n💡 Tip: Make sure your .env.local file exists and contains all required variables.');
+  if (missing.length > 0) {
+    console.error(`❌ ERROR: Missing required environment variables: ${missing.join(', ')}`);
+    console.error('💡 Make sure your .env.local file contains all required variables.');
     console.error('See .env.local.example for reference.\n');
-    throw error;
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
+
+  return {
+    JWT_SECRET: process.env[ENV_VARS.JWT_SECRET]!,
+    AWS_REGION: process.env[ENV_VARS.AWS_REGION]!,
+    NODE_ENV: process.env[ENV_VARS.NODE_ENV]!,
+    USE_LOCAL_DB: process.env[ENV_VARS.USE_LOCAL_DB] || 'false',
+  } as const;
 }
 
 /**
  * Validated environment variables
  * Use this instead of process.env directly
+ * 
+ * Note: If you're using this in a script, make sure to call dotenv.config()
+ * with the path to .env.local BEFORE importing this module.
  */
-export const env = loadEnvironment();
+export const env = validateAndLoadEnv();

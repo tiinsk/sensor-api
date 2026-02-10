@@ -26,16 +26,12 @@ cp .env.local.example .env.local
 **Important:** All required environment variables MUST be set. The application will fail with a clear error message if any are missing.
 
 **Required variables:**
-- `JWT_SECRET` - Secret key for JWT tokens
-- `DEVICES_TABLE` - DynamoDB Devices table name
-- `READINGS_TABLE` - DynamoDB Readings table name  
-- `USERS_TABLE` - DynamoDB Users table name
-- `AUTH_TABLE` - DynamoDB Auth table name
+- `JWT_SECRET` - Secret key for JWT tokens (generate with: `openssl rand -base64 32`)
 - `AWS_REGION` - AWS region (e.g., `us-east-1`)
+- `NODE_ENV` - Environment mode (`development`, `production`, or `test`)
 
 **Optional variables:**
-- `IS_LOCAL` - Set to `true` for local DynamoDB (default: `false`)
-- `NODE_ENV` - Environment mode (default: `development`)
+- `USE_LOCAL_DB` - Set to `true` to use DynamoDB Local (defaults to `false` for AWS DynamoDB)
 
 ### 3. Start DynamoDB Local
 
@@ -66,7 +62,45 @@ This creates:
 - 1 test user (`testuser` / `testpassword`)
 - 1 test API key (`test-api-key-12345`)
 
-### 6. Stop DynamoDB Local
+### 6. Run the API locally with SAM (optional)
+
+AWS SAM CLI allows you to test your Lambda function locally:
+
+```bash
+# Start local API server (runs on http://localhost:3000)
+npm run sam:local
+```
+
+This will:
+1. Generate `env.json` from your `.env.local` file
+2. Start a local API Gateway on port 3000
+3. Connect to your local DynamoDB (make sure it's running with `npm run dynamodb:start`)
+
+**Test with curl:**
+```bash
+# Root endpoint
+curl http://localhost:3000/
+
+# Get all devices
+curl http://localhost:3000/api/devices
+
+# Get a specific device
+curl http://localhost:3000/api/devices/device-001
+```
+
+**Test with a specific event:**
+```bash
+npm run sam:invoke
+```
+
+This invokes the Lambda with the test event in `events/test-event.json`.
+
+**SAM Requirements:**
+- Install AWS SAM CLI: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
+- Docker must be running (SAM uses Docker to run Lambda locally)
+- DynamoDB Local must be running (`npm run dynamodb:start`)
+
+### 7. Stop DynamoDB Local
 
 ```bash
 npm run dynamodb:stop
@@ -81,9 +115,57 @@ npm run dynamodb:stop
 | `npm run dynamodb:stop` | Stop DynamoDB Local |
 | `npm run tables:create` | Create tables locally |
 | `npm run seed:local` | Seed test data |
+| `npm run sam:local` | Run API locally with SAM CLI |
+| `npm run sam:invoke` | Invoke Lambda with test event |
 | `npm run cdk:synth` | Generate CloudFormation |
 | `npm run cdk:deploy` | Deploy to AWS |
 | `npm run cdk:destroy` | Delete AWS resources |
+
+## Local Testing with SAM
+
+**What is SAM?**
+
+AWS SAM (Serverless Application Model) is AWS's framework for building serverless applications. The SAM CLI allows you to:
+- Run your Lambda functions locally
+- Test API Gateway routes locally
+- Debug your code with breakpoints
+- Simulate the AWS Lambda execution environment
+
+**How does it work with this project?**
+
+1. **`template.yaml`**: Defines your Lambda function and API Gateway routes in SAM syntax
+2. **SAM CLI**: Runs your compiled code (`dist/`) in a local Docker container that mimics AWS Lambda
+3. **Local DynamoDB**: SAM connects to your local DynamoDB Docker container via `--docker-network`
+4. **API Gateway Emulator**: SAM creates a local HTTP server (port 3000) that behaves like API Gateway
+
+**Architecture when running locally:**
+
+```
+Your Computer:
+├── SAM CLI (port 3000)
+│   └── Lambda Container (Node.js 18)
+│       └── Your API code (dist/index.js)
+│           └── Connects to ↓
+└── DynamoDB Local (port 8000)
+    └── Admin UI (port 8001)
+```
+
+**Why use SAM instead of running the code directly?**
+
+- **Realistic testing**: Mimics AWS Lambda's execution environment
+- **API Gateway simulation**: Tests path routing, query params, headers
+- **Cold start testing**: Can test Lambda cold starts
+- **Debugging**: Can attach a debugger to the Lambda function
+- **No AWS costs**: Everything runs locally
+
+**SAM vs Direct Testing:**
+
+| Method | Pros | Cons |
+|--------|------|------|
+| **SAM** | Realistic AWS environment, API Gateway simulation | Requires Docker, slower startup |
+| **Direct** | Fast, simple, easy debugging | Doesn't test Lambda-specific behavior |
+
+For this project, both methods work. Use SAM when you want to test the full request/response cycle as it would work in AWS.
 
 ## DynamoDB Tables
 
@@ -109,8 +191,17 @@ Raspberry sends sensor data with authentication API key.
 
 ### Environment Variables
 
-- `JWT_SECRET` - Secret key for signing JWT tokens (change in production!)
-- Default development secret is in `.env.local.example`
+The API requires minimal configuration via environment variables:
+
+**Required:**
+- `JWT_SECRET` - Secret key for signing JWT tokens
+- `AWS_REGION` - AWS region for DynamoDB
+- `NODE_ENV` - Environment mode
+
+**Optional:**
+- `USE_LOCAL_DB` - Toggle between local DynamoDB (Docker) and AWS DynamoDB
+
+See `.env.local.example` for complete configuration.
 
 ## Project Structure
 

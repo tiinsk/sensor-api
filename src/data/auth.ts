@@ -4,10 +4,10 @@
 
 import { GetCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
-import { env } from '../lib/env';
+import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const TABLE_NAME = env.AUTH_TABLE;
+const TABLE_NAME = TABLES.AUTH;
 
 export interface ApiKey {
   apiKey: string;

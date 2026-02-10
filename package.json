@@ -13,7 +13,10 @@
     "dynamodb:start": "docker compose up -d",
     "dynamodb:stop": "docker compose down",
     "tables:create": "node dist/scripts/create-tables-local.js",
-    "seed:local": "node dist/scripts/seed-local.js"
+    "seed:local": "node dist/scripts/seed-local.js",
+    "sam:env": "node dist/scripts/generate-sam-env.js",
+    "sam:local": "npm run sam:env && sam local start-api --env-vars env.json --warm-containers EAGER --docker-network sensor-api_default",
+    "sam:invoke": "npm run sam:env && sam local invoke SensorApiFunction --env-vars env.json --event events/test-event.json"
   },
   "author": "Tiina Koskiranta",
   "license": "ISC",

@@ -1,0 +1,30 @@
+{
+  "version": "2.0",
+  "routeKey": "GET /",
+  "rawPath": "/",
+  "rawQueryString": "",
+  "headers": {
+    "accept": "application/json",
+    "content-type": "application/json",
+    "user-agent": "SAM-Local-Test"
+  },
+  "requestContext": {
+    "accountId": "123456789012",
+    "apiId": "local-test",
+    "domainName": "localhost",
+    "domainPrefix": "localhost",
+    "http": {
+      "method": "GET",
+      "path": "/",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "127.0.0.1",
+      "userAgent": "SAM-Local-Test"
+    },
+    "requestId": "local-test-request-id",
+    "routeKey": "GET /",
+    "stage": "$default",
+    "time": "01/Jan/2026:00:00:00 +0000",
+    "timeEpoch": 1704067200000
+  },
+  "isBase64Encoded": false
+}

@@ -2,11 +2,11 @@ import { DynamoDBDocumentClient, QueryCommand, GetCommand } from '@aws-sdk/lib-d
 import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Device, Reading } from '../types';
 import { NotFoundError } from '../lib/errors';
-import { env } from '../lib/env';
+import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const devicesTableName = env.DEVICES_TABLE;
-const readingsTableName = env.READINGS_TABLE;
+const devicesTableName = TABLES.DEVICES;
+const readingsTableName = TABLES.READINGS;
 
 interface DeviceWithReading extends Device {
   reading: Reading | null;

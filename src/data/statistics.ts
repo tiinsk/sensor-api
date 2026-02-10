@@ -2,10 +2,10 @@ import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Reading } from '../types';
 import { getAllDevices } from './devices';
-import { env } from '../lib/env';
+import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const readingsTableName = env.READINGS_TABLE;
+const readingsTableName = TABLES.READINGS;
 
 interface Statistics {
   temperature: {

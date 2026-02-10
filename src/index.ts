@@ -2,9 +2,9 @@
  * Main Lambda handler using lambda-api for routing
  */
 
-import createAPI, { Request, Response } from 'lambda-api';
-import {APIGatewayProxyEvent, APIGatewayProxyResultV2, Context} from 'aws-lambda';
 import 'dotenv/config';
+import createAPI, { Request, Response } from 'lambda-api';
+import { APIGatewayProxyEvent, APIGatewayProxyResultV2, Context } from 'aws-lambda';
 
 // Auth handlers
 import { login } from './handlers/auth';

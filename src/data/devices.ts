@@ -6,10 +6,10 @@ import { ScanCommand, QueryCommand, GetCommand, PutCommand, UpdateCommand } from
 import { createDynamoDBClient } from '../lib/db-client';
 import type { Device, ArrayRequestParams } from '../types';
 import { NotFoundError, ConflictError } from '../lib/errors';
-import { env } from '../lib/env';
+import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const TABLE_NAME = env.DEVICES_TABLE;
+const TABLE_NAME = TABLES.DEVICES;
 
 /**
  * Map DynamoDB item to Device type

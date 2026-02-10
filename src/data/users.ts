@@ -4,10 +4,10 @@
 
 import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
-import { env } from '../lib/env';
+import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const TABLE_NAME = env.USERS_TABLE;
+const TABLE_NAME = TABLES.USERS;
 
 export interface User {
   username: string;
