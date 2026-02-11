@@ -1,8 +1,8 @@
 /**
- * Authentication middleware for Lambda handlers
+ * Authentication middleware for lambda-api
  */
 
-import { APIGatewayProxyEventV2 } from 'aws-lambda';
+import { Request, Response, NextFunction } from 'lambda-api';
 import { verifyToken, isUserToken, isApiKeyToken, TokenPayload } from './jwt';
 import { getUser } from '../data/users';
 import { getApiKey } from '../data/auth';
@@ -17,9 +17,9 @@ export interface AuthContext {
 /**
  * Extract JWT token from Authorization header
  */
-function extractToken(event: APIGatewayProxyEventV2): string | null {
-  const authHeader = event.headers?.authorization || event.headers?.Authorization;
-  
+function extractToken(req: Request): string | null {
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+
   if (!authHeader) {
     return null;
   }
@@ -57,10 +57,8 @@ async function validateTokenPayload(payload: TokenPayload): Promise<boolean> {
  * Authenticate a request
  * Returns authentication context with user/api key information
  */
-export async function authenticate(
-  event: APIGatewayProxyEventV2
-): Promise<AuthContext> {
-  const token = extractToken(event);
+export async function authenticate(req: Request): Promise<AuthContext> {
+  const token = extractToken(req);
 
   if (!token) {
     return { isAuthenticated: false };
@@ -96,20 +94,17 @@ export async function authenticate(
 }
 
 /**
- * Require authentication for a handler
- * Returns 401 if not authenticated
+ * Middleware to require authentication
+ * Use this as middleware in lambda-api routes
  */
-export async function requireAuth(
-  event: APIGatewayProxyEventV2
-): Promise<{ statusCode: 401; body: string } | AuthContext> {
-  const authContext = await authenticate(event);
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const authContext = await authenticate(req);
 
   if (!authContext.isAuthenticated) {
-    return {
-      statusCode: 401,
-      body: JSON.stringify({ error: 'Unauthorized' }),
-    };
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  return authContext;
+  // Attach auth context to request for use in handlers
+  (req as any).auth = authContext;
+  next();
 }
