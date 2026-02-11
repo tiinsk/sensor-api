@@ -27,8 +27,5 @@ function validateAndLoadEnv() {
 /**
  * Validated environment variables
  * Use this instead of process.env directly
- * 
- * Note: If you're using this in a script, make sure to call dotenv.config()
- * with the path to .env.local BEFORE importing this module.
  */
 export const env = validateAndLoadEnv();

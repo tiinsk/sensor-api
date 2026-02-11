@@ -4,6 +4,17 @@ Description: SAM Template for local testing of Sensor API
 
 # Environment variables are loaded from env.json (generated from .env.local)
 
+Parameters:
+  JWT_SECRET:
+    Type: String
+  AWS_REGION:
+    Type: String
+  NODE_ENV:
+    Type: String
+  USE_LOCAL_DB:
+    Type: String
+
+
 Globals:
   Function:
     Timeout: 30
@@ -15,7 +26,13 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
-      CodeUri: ./dist
+      CodeUri: ./dist/bundle
+      Environment:
+        Variables:
+          JWT_SECRET: !Ref JWT_SECRET
+          AWS_REGION: !Ref AWS_REGION
+          NODE_ENV: !Ref NODE_ENV
+          USE_LOCAL_DB: !Ref USE_LOCAL_DB
       Events:
         RootApi:
           Type: HttpApi
@@ -27,14 +44,6 @@ Resources:
           Properties:
             Path: /{proxy+}
             Method: ANY
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: es2020
-        Sourcemap: true
-        EntryPoints:
-          - index.ts
 
 Outputs:
   SensorApiUrl:

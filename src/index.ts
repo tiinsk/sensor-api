@@ -2,7 +2,6 @@
  * Main Lambda handler using lambda-api for routing
  */
 
-import 'dotenv/config';
 import createAPI, { Request, Response } from 'lambda-api';
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2, Context } from 'aws-lambda';
 

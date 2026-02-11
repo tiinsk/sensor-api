@@ -46,7 +46,6 @@ This starts:
 ### 4. Create tables locally
 
 ```bash
-npm run build
 npm run tables:create
 ```
 

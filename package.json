@@ -4,6 +4,7 @@
   "description": "Sensor API - AWS Lambda + DynamoDB",
   "scripts": {
     "build": "tsc",
+    "bundle": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/bundle/index.js --external:@aws-sdk/* --external:aws-sdk",
     "cdk": "cd cdk && cdk",
     "cdk:synth": "cd cdk && cdk synth",
     "cdk:deploy": "cd cdk && cdk deploy --all",
@@ -11,10 +12,10 @@
     "cdk:destroy": "cd cdk && cdk destroy --all",
     "dynamodb:start": "docker compose up -d",
     "dynamodb:stop": "docker compose down",
-    "tables:create": "node dist/scripts/create-tables-local.js",
-    "seed:local": "node dist/scripts/seed-local.js",
-    "sam:env": "node dist/scripts/generate-sam-env.js",
-    "sam:local": "npm run sam:env && sam local start-api --env-vars env.json --warm-containers EAGER --docker-network sensor-api_default",
+    "tables:create": "dotenv -c -- node_modules/.bin/ts-node scripts/create-tables-local.ts",
+    "seed:local": "dotenv -c -- node_modules/.bin/ts-node scripts/seed-local.ts",
+    "sam:env": "dotenv -c -- node_modules/.bin/ts-node scripts/generate-sam-env.ts",
+    "sam:local": "npm run sam:env && sam local start-api --env-vars env.json --warm-containers EAGER & npm run bundle -- --watch",
     "sam:invoke": "npm run sam:env && sam local invoke SensorApiFunction --env-vars env.json --event events/test-event.json"
   },
   "author": "Tiina Koskiranta",
@@ -24,7 +25,7 @@
     "@aws-sdk/lib-dynamodb": "^3.709.0",
     "aws-cdk-lib": "^2.170.0",
     "constructs": "^10.4.2",
-    "dotenv": "^16.4.7",
+    "dotenv-cli": "^11.0.0",
     "jsonwebtoken": "^9.0.2",
     "lambda-api": "^1.0.3",
     "zod": "^3.24.1"
@@ -35,6 +36,7 @@
     "@types/node": "^22.10.5",
     "aws-cdk": "^2.170.0",
     "esbuild": "^0.24.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   }
 }
