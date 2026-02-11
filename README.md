@@ -61,6 +61,18 @@ This creates:
 - 1 test user (`testuser` / `testpassword`)
 - 1 test API key (`test-api-key-12345`)
 
+In order to test authenticated API routes (e.g. with curl, see section `Test with curl:`), new api-key and JWT-token can be created with:
+
+```bash
+npm run create:api-key
+```
+
+New user can be created with following script:
+
+```bash
+npm run create:user
+```
+
 ### 6. Run the API locally with SAM (optional)
 
 AWS SAM CLI allows you to test your Lambda function locally:
@@ -81,10 +93,10 @@ This will:
 curl http://localhost:3000/
 
 # Get all devices
-curl http://localhost:3000/api/devices
+curl -H "Authorization: Bearer <your-jwt-token>" http://localhost:3000/api/devices
 
 # Get a specific device
-curl http://localhost:3000/api/devices/device-001
+curl -H "Authorization: Bearer <your-jwt-token>" http://localhost:3000/api/devices/device-001
 ```
 
 **Test with a specific event:**
