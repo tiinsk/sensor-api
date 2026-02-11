@@ -40,10 +40,9 @@ export function signUserToken(username: string): string {
 /**
  * Sign a JWT token for an API key
  */
-export function signApiKeyToken(apiKey: string, deviceId?: string): string {
+export function signApiKeyToken(apiKey: string): string {
   const payload: ApiKeyTokenPayload = {
     apiKey,
-    deviceId,
     iat: Math.floor(Date.now() / 1000),
   };
   return jwt.sign(payload, JWT_SECRET, {

@@ -146,7 +146,6 @@ async function seedData() {
         TableName: TABLES.AUTH,
       Item: {
         apiKey: 'test-api-key-12345',
-        deviceId: null,
         description: 'Test API key for development',
       },
     })

@@ -7,7 +7,6 @@ import { createDynamoDBClient } from '../lib/db-client';
 import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const TABLE_NAME = TABLES.AUTH;
 
 export interface ApiKey {
   apiKey: string;
@@ -22,7 +21,7 @@ export async function getApiKey(apiKey: string): Promise<ApiKey | null> {
   try {
     const result = await docClient.send(
       new GetCommand({
-        TableName: TABLE_NAME,
+        TableName: TABLES.AUTH,
         Key: { apiKey },
       })
     );
@@ -41,7 +40,7 @@ export async function createApiKey(apiKey: ApiKey): Promise<ApiKey> {
   try {
     await docClient.send(
       new PutCommand({
-        TableName: TABLE_NAME,
+        TableName: TABLES.AUTH,
         Item: apiKey,
         ConditionExpression: 'attribute_not_exists(apiKey)', // Prevent overwriting
       })
@@ -61,7 +60,7 @@ export async function deleteApiKey(apiKey: string): Promise<void> {
   try {
     await docClient.send(
       new DeleteCommand({
-        TableName: TABLE_NAME,
+        TableName: TABLES.AUTH,
         Key: { apiKey },
       })
     );

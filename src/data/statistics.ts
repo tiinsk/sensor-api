@@ -5,7 +5,6 @@ import { getAllDevices } from './devices';
 import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const readingsTableName = TABLES.READINGS;
 
 interface Statistics {
   temperature: {
@@ -79,7 +78,7 @@ async function getDeviceReadingsInRange(
     do {
       const result = await client.send(
         new QueryCommand({
-          TableName: readingsTableName,
+          TableName: TABLES.READINGS,
           KeyConditionExpression: 'deviceId = :deviceId AND #timestamp BETWEEN :startTime AND :endTime',
           ExpressionAttributeNames: {
             '#timestamp': 'timestamp',

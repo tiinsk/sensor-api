@@ -5,8 +5,6 @@ import { NotFoundError } from '../lib/errors';
 import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const devicesTableName = TABLES.DEVICES;
-const readingsTableName = TABLES.READINGS;
 
 interface DeviceWithReading extends Device {
   reading: Reading | null;
@@ -27,7 +25,7 @@ async function fetchLatestReading(
   try {
     const result = await client.send(
       new GetCommand({
-        TableName: readingsTableName,
+        TableName: TABLES.READINGS,
         Key: {
           deviceId,
           timestamp: latestReadingId,
@@ -54,7 +52,7 @@ export async function getAllLatestReadings(params: ArrayRequestParams) {
     // Note: This assumes 'sensor' is the default type. Adjust if you have multiple types.
     const result = await docClient.send(
       new QueryCommand({
-        TableName: devicesTableName,
+        TableName: TABLES.DEVICES,
         IndexName: 'type-order-index',
         KeyConditionExpression: '#type = :type',
         ExpressionAttributeNames: {
@@ -109,7 +107,7 @@ export async function getDeviceLatestReading(deviceId: string) {
     // Fetch device
     const deviceResult = await docClient.send(
       new GetCommand({
-        TableName: devicesTableName,
+        TableName: TABLES.DEVICES,
         Key: { id: deviceId },
       })
     );

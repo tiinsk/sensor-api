@@ -3,6 +3,8 @@
  * Single source of truth for both CDK and local DynamoDB setup
  */
 
+import {TABLES} from './constants';
+
 export interface AttributeDefinition {
   name: string;
   type: 'S' | 'N' | 'B'; // String, Number, Binary
@@ -29,7 +31,7 @@ export interface TableSchema {
 
 export const tableSchemas = {
   devices: {
-    tableName: 'SensorApi-Devices',
+    tableName: TABLES.DEVICES,
     partitionKey: { name: 'id', type: 'S' },
     attributes: [
       { name: 'id', type: 'S' },
@@ -46,25 +48,25 @@ export const tableSchemas = {
   },
 
   readings: {
-    tableName: 'SensorApi-Readings',
-    partitionKey: { name: 'device_id', type: 'S' },
+    tableName: TABLES.READINGS,
+    partitionKey: { name: 'deviceId', type: 'S' },
     sortKey: { name: 'timestamp', type: 'S' },
     attributes: [
-      { name: 'device_id', type: 'S' },
+      { name: 'deviceId', type: 'S' },
       { name: 'timestamp', type: 'S' },
     ],
   },
 
   users: {
-    tableName: 'SensorApi-Users',
+    tableName: TABLES.USERS,
     partitionKey: { name: 'username', type: 'S' },
     attributes: [{ name: 'username', type: 'S' }],
   },
 
   auth: {
-    tableName: 'SensorApi-Auth',
-    partitionKey: { name: 'api_key', type: 'S' },
-    attributes: [{ name: 'api_key', type: 'S' }],
+    tableName: TABLES.AUTH,
+    partitionKey: { name: 'apiKey', type: 'S' },
+    attributes: [{ name: 'apiKey', type: 'S' }],
   },
 } as const satisfies Record<string, TableSchema>;
 

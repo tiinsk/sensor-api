@@ -2,14 +2,13 @@
  * Device data access layer
  */
 
-import { ScanCommand, QueryCommand, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { ScanCommand, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import type { Device, ArrayRequestParams } from '../types';
 import { NotFoundError, ConflictError } from '../lib/errors';
 import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const TABLE_NAME = TABLES.DEVICES;
 
 /**
  * Map DynamoDB item to Device type
@@ -19,9 +18,9 @@ function mapToDevice(item: any): Device {
     id: item.id,
     name: item.name,
     location: {
-      x: item.location_x,
-      y: item.location_y,
-      type: item.location_type,
+      x: item.location.x,
+      y: item.location.y,
+      type: item.location.type,
     },
     disabled: item.disabled,
     order: item.order,
@@ -36,9 +35,11 @@ function mapToDynamoItem(device: Device) {
   return {
     id: device.id,
     name: device.name,
-    location_x: device.location.x,
-    location_y: device.location.y,
-    location_type: device.location.type,
+    Location: {
+      x: device.location.x,
+      y: device.location.y,
+      type: device.location.type,
+    },
     disabled: device.disabled,
     order: device.order,
     type: device.type,
@@ -55,7 +56,7 @@ export async function getAllDevices(params: ArrayRequestParams & { includeDisabl
   // For production, use LastEvaluatedKey pagination instead
   const result = await docClient.send(
     new ScanCommand({
-      TableName: TABLE_NAME,
+      TableName: TABLES.DEVICES,
       Limit: limit + offset, // Fetch more to handle offset
     })
   );
@@ -87,7 +88,7 @@ export async function getAllDevices(params: ArrayRequestParams & { includeDisabl
 async function deviceExists(deviceId: string): Promise<boolean> {
   const result = await docClient.send(
     new GetCommand({
-      TableName: TABLE_NAME,
+      TableName: TABLES.DEVICES,
       Key: { id: deviceId },
     })
   );
@@ -103,7 +104,7 @@ export async function getDevice(
 ): Promise<Device> {
   const result = await docClient.send(
     new GetCommand({
-      TableName: TABLE_NAME,
+      TableName: TABLES.DEVICES,
       Key: { id: deviceId },
     })
   );
@@ -112,7 +113,7 @@ export async function getDevice(
     throw new NotFoundError(`Device with id ${deviceId} not found`);
   }
 
-  if (!includeDisabled && result.Item.disabled) {
+  if (!includeDisabled && result.Item.Disabled) {
     throw new NotFoundError(`Device with id ${deviceId} not found`);
   }
 
@@ -140,7 +141,7 @@ export async function addDevice(device: Device): Promise<Device> {
   const item = mapToDynamoItem(device);
   await docClient.send(
     new PutCommand({
-      TableName: TABLE_NAME,
+      TableName: TABLES.DEVICES,
       Item: item,
     })
   );
@@ -180,7 +181,7 @@ export async function updateDevice(
   const item = mapToDynamoItem(updatedDevice);
   await docClient.send(
     new PutCommand({
-      TableName: TABLE_NAME,
+      TableName: TABLES.DEVICES,
       Item: item,
     })
   );

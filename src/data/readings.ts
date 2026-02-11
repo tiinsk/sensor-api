@@ -8,14 +8,12 @@ import { getDevice } from './devices';
 import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const READINGS_TABLE = TABLES.READINGS;
-const DEVICES_TABLE = TABLES.DEVICES;
 
 export type ReadingType = 'temperature' | 'humidity' | 'pressure' | 'lux' | 'battery';
 export type TimeLevel = '10 minutes' | '30 minutes' | 'day' | 'week' | 'month';
 
 interface Reading {
-  device_id: string;
+  deviceId: string;
   timestamp: string;
   temperature?: number;
   humidity?: number;
@@ -43,7 +41,7 @@ export async function getDeviceReadings(params: {
   // Query readings in time range
   const result = await docClient.send(
     new QueryCommand({
-      TableName: READINGS_TABLE,
+      TableName: TABLES.READINGS,
       KeyConditionExpression: 'device_id = :deviceId AND #ts BETWEEN :startTime AND :endTime',
       ExpressionAttributeNames: {
         '#ts': 'timestamp',
@@ -95,7 +93,7 @@ export async function getAllReadings(params: {
   const readingsPromises = devicesResult.values.map(async (device) => {
     const result = await docClient.send(
       new QueryCommand({
-        TableName: READINGS_TABLE,
+        TableName: TABLES.READINGS,
         KeyConditionExpression: 'device_id = :deviceId AND #ts BETWEEN :startTime AND :endTime',
         ExpressionAttributeNames: {
           '#ts': 'timestamp',
@@ -152,7 +150,7 @@ export async function addDeviceReading(params: {
   const timestamp = new Date().toISOString();
 
   const reading: Reading = {
-    device_id: params.id,
+    deviceId: params.id,
     timestamp,
     temperature: params.payload.temperature,
     humidity: params.payload.humidity,
@@ -164,7 +162,7 @@ export async function addDeviceReading(params: {
   // Add reading
   await docClient.send(
     new PutCommand({
-      TableName: READINGS_TABLE,
+      TableName: TABLES.READINGS,
       Item: reading,
     })
   );
@@ -172,7 +170,7 @@ export async function addDeviceReading(params: {
   // Update device's latest_reading timestamp
   await docClient.send(
     new UpdateCommand({
-      TableName: DEVICES_TABLE,
+      TableName: TABLES.DEVICES,
       Key: { id: params.id },
       UpdateExpression: 'SET latest_reading_timestamp = :timestamp',
       ExpressionAttributeValues: {

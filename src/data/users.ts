@@ -7,7 +7,6 @@ import { createDynamoDBClient } from '../lib/db-client';
 import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
-const TABLE_NAME = TABLES.USERS;
 
 export interface User {
   username: string;
@@ -23,7 +22,7 @@ export async function getUser(username: string): Promise<User | null> {
   try {
     const result = await docClient.send(
       new GetCommand({
-        TableName: TABLE_NAME,
+        TableName: TABLES.USERS,
         Key: { username },
       })
     );
@@ -42,7 +41,7 @@ export async function createUser(user: User): Promise<User> {
   try {
     await docClient.send(
       new PutCommand({
-        TableName: TABLE_NAME,
+        TableName: TABLES.USERS,
         Item: user,
         ConditionExpression: 'attribute_not_exists(username)', // Prevent overwriting
       })

@@ -4,7 +4,7 @@
 
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import type { CreateTableCommandInput } from '@aws-sdk/client-dynamodb';
-import type { TableSchema, AttributeDefinition } from './table-schemas';
+import type { TableSchema } from './table-schemas';
 
 /**
  * Convert shared schema to CDK Table props
