@@ -1,11 +1,10 @@
 /**
- * Latest readings route handlers
+ * Latest readings route handlers for lambda-api
  */
 
-import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { Request, Response } from 'lambda-api';
 import { z } from 'zod';
 import { getAllLatestReadings, getDeviceLatestReading } from '../data/latest-readings';
-import { requireAuth } from '../lib/auth-middleware';
 import { isHttpError } from '../lib/errors';
 
 const GetAllLatestSchema = z.object({
@@ -17,88 +16,45 @@ const GetAllLatestSchema = z.object({
  * GET /api/latest
  * Get latest readings for all devices
  */
-export async function getAllLatestHandler(
-  event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> {
+export async function getAllLatestHandler(req: Request, res: Response) {
   try {
-    // Require authentication
-    const authResult = await requireAuth(event);
-    if ('statusCode' in authResult) {
-      return authResult;
-    }
-
     // Parse query parameters
-    const query = GetAllLatestSchema.parse(event.queryStringParameters || {});
+    const query = GetAllLatestSchema.parse(req.query);
 
     const result = await getAllLatestReadings(query);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result),
-    };
+    return res.json(result);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid request', details: error.errors }),
-      };
-    }
-
-    if (isHttpError(error)) {
-      return {
-        statusCode: error.statusCode,
-        body: JSON.stringify({ error: error.message }),
-      };
-    }
-
     console.error('Get all latest readings error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid request', details: error.errors });
+    }
+    if (isHttpError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
 /**
- * GET /api/devices/{id}/latest
+ * GET /api/devices/:id/latest
  * Get latest reading for a specific device
  */
-export async function getDeviceLatestHandler(
-  event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> {
+export async function getDeviceLatestHandler(req: Request, res: Response) {
   try {
-    // Require authentication
-    const authResult = await requireAuth(event);
-    if ('statusCode' in authResult) {
-      return authResult;
-    }
-
-    const deviceId = event.pathParameters?.id;
+    const deviceId = req.params.id;
     if (!deviceId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Device ID is required' }),
-      };
+      return res.status(400).json({ error: 'Device ID is required' });
     }
 
     const result = await getDeviceLatestReading(deviceId);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result),
-    };
+    return res.json(result);
   } catch (error) {
-    if (isHttpError(error)) {
-      return {
-        statusCode: error.statusCode,
-        body: JSON.stringify({ error: error.message }),
-      };
-    }
-
     console.error('Get device latest reading error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    if (isHttpError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

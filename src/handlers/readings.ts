@@ -1,11 +1,10 @@
 /**
- * Readings route handlers
+ * Readings route handlers for lambda-api
  */
 
-import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { Request, Response } from 'lambda-api';
 import { z } from 'zod';
 import { getDeviceReadings, getAllReadings, addDeviceReading } from '../data/readings';
-import { requireAuth, AuthContext } from '../lib/auth-middleware';
 import { isHttpError } from '../lib/errors';
 
 const GetDeviceReadingsSchema = z.object({
@@ -32,29 +31,18 @@ const AddReadingSchema = z.object({
 });
 
 /**
- * GET /api/devices/{id}/readings
+ * GET /api/devices/:id/readings
  * Get readings for a specific device
  */
-export async function getDeviceReadingsHandler(
-  event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> {
+export async function getDeviceReadingsHandler(req: Request, res: Response) {
   try {
-    // Require authentication
-    const authResult = await requireAuth(event);
-    if ('statusCode' in authResult) {
-      return authResult;
-    }
-
-    const deviceId = event.pathParameters?.id;
+    const deviceId = req.params.id;
     if (!deviceId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Device ID is required' }),
-      };
+      return res.status(400).json({ error: 'Device ID is required' });
     }
 
     // Parse query parameters
-    const query = GetDeviceReadingsSchema.parse(event.queryStringParameters || {});
+    const query = GetDeviceReadingsSchema.parse(req.query);
 
     const result = await getDeviceReadings({
       deviceId,
@@ -64,30 +52,16 @@ export async function getDeviceReadingsHandler(
       level: query.level,
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result),
-    };
+    return res.json(result);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid request', details: error.errors }),
-      };
-    }
-
-    if (isHttpError(error)) {
-      return {
-        statusCode: error.statusCode,
-        body: JSON.stringify({ error: error.message }),
-      };
-    }
-
     console.error('Get device readings error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid request', details: error.errors });
+    }
+    if (isHttpError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
@@ -95,18 +69,10 @@ export async function getDeviceReadingsHandler(
  * GET /api/readings
  * Get readings for all devices
  */
-export async function getAllReadingsHandler(
-  event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> {
+export async function getAllReadingsHandler(req: Request, res: Response) {
   try {
-    // Require authentication
-    const authResult = await requireAuth(event);
-    if ('statusCode' in authResult) {
-      return authResult;
-    }
-
     // Parse query parameters
-    const query = GetAllReadingsSchema.parse(event.queryStringParameters || {});
+    const query = GetAllReadingsSchema.parse(req.query);
 
     const result = await getAllReadings({
       startTime: query.startTime,
@@ -117,87 +83,47 @@ export async function getAllReadingsHandler(
       offset: query.offset,
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result),
-    };
+    return res.json(result);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid request', details: error.errors }),
-      };
-    }
-
-    if (isHttpError(error)) {
-      return {
-        statusCode: error.statusCode,
-        body: JSON.stringify({ error: error.message }),
-      };
-    }
-
     console.error('Get all readings error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid request', details: error.errors });
+    }
+    if (isHttpError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
 /**
- * POST /api/devices/{id}/readings
+ * POST /api/devices/:id/readings
  * Add a new reading for a device
  */
-export async function addDeviceReadingHandler(
-  event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> {
+export async function addDeviceReadingHandler(req: Request, res: Response) {
   try {
-    // Require authentication
-    const authResult = await requireAuth(event);
-    if ('statusCode' in authResult) {
-      return authResult;
-    }
-
-    const deviceId = event.pathParameters?.id;
+    const deviceId = req.params.id;
     if (!deviceId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Device ID is required' }),
-      };
+      return res.status(400).json({ error: 'Device ID is required' });
     }
 
     // Parse and validate request body
-    const body = JSON.parse(event.body || '{}');
-    const payload = AddReadingSchema.parse(body);
+    const payload = AddReadingSchema.parse(req.body);
 
     const reading = await addDeviceReading({
       id: deviceId,
       payload,
     });
 
-    return {
-      statusCode: 201,
-      body: JSON.stringify(reading),
-    };
+    return res.status(201).json(reading);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid request', details: error.errors }),
-      };
-    }
-
-    if (isHttpError(error)) {
-      return {
-        statusCode: error.statusCode,
-        body: JSON.stringify({ error: error.message }),
-      };
-    }
-
     console.error('Add device reading error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid request', details: error.errors });
+    }
+    if (isHttpError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

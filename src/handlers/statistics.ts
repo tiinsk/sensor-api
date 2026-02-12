@@ -1,11 +1,10 @@
 /**
- * Statistics route handlers
+ * Statistics route handlers for lambda-api
  */
 
-import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { Request, Response } from 'lambda-api';
 import { z } from 'zod';
 import { getAllStatistics, getDeviceStatistics } from '../data/statistics';
-import { requireAuth } from '../lib/auth-middleware';
 import { isHttpError } from '../lib/errors';
 
 const GetAllStatisticsSchema = z.object({
@@ -24,101 +23,54 @@ const GetDeviceStatisticsSchema = z.object({
  * GET /api/statistics
  * Get statistics for all devices
  */
-export async function getAllStatisticsHandler(
-  event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> {
+export async function getAllStatisticsHandler(req: Request, res: Response) {
   try {
-    // Require authentication
-    const authResult = await requireAuth(event);
-    if ('statusCode' in authResult) {
-      return authResult;
-    }
-
     // Parse query parameters
-    const query = GetAllStatisticsSchema.parse(event.queryStringParameters || {});
+    const query = GetAllStatisticsSchema.parse(req.query);
 
     const result = await getAllStatistics(query);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result),
-    };
+    return res.json(result);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid request', details: error.errors }),
-      };
-    }
-
-    if (isHttpError(error)) {
-      return {
-        statusCode: error.statusCode,
-        body: JSON.stringify({ error: error.message }),
-      };
-    }
-
     console.error('Get all statistics error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid request', details: error.errors });
+    }
+    if (isHttpError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
 /**
- * GET /api/devices/{id}/statistics
+ * GET /api/devices/:id/statistics
  * Get statistics for a specific device
  */
-export async function getDeviceStatisticsHandler(
-  event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> {
+export async function getDeviceStatisticsHandler(req: Request, res: Response) {
   try {
-    // Require authentication
-    const authResult = await requireAuth(event);
-    if ('statusCode' in authResult) {
-      return authResult;
-    }
-
-    const deviceId = event.pathParameters?.id;
+    const deviceId = req.params.id;
     if (!deviceId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Device ID is required' }),
-      };
+      return res.status(400).json({ error: 'Device ID is required' });
     }
 
     // Parse query parameters
-    const query = GetDeviceStatisticsSchema.parse(event.queryStringParameters || {});
+    const query = GetDeviceStatisticsSchema.parse(req.query);
 
     const result = await getDeviceStatistics({
       deviceId,
       ...query,
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result),
-    };
+    return res.json(result);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid request', details: error.errors }),
-      };
-    }
-
-    if (isHttpError(error)) {
-      return {
-        statusCode: error.statusCode,
-        body: JSON.stringify({ error: error.message }),
-      };
-    }
-
     console.error('Get device statistics error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid request', details: error.errors });
+    }
+    if (isHttpError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

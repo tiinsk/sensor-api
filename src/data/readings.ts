@@ -42,7 +42,7 @@ export async function getDeviceReadings(params: {
   const result = await docClient.send(
     new QueryCommand({
       TableName: TABLES.READINGS,
-      KeyConditionExpression: 'device_id = :deviceId AND #ts BETWEEN :startTime AND :endTime',
+      KeyConditionExpression: 'deviceId = :deviceId AND #ts BETWEEN :startTime AND :endTime',
       ExpressionAttributeNames: {
         '#ts': 'timestamp',
       },
@@ -94,7 +94,7 @@ export async function getAllReadings(params: {
     const result = await docClient.send(
       new QueryCommand({
         TableName: TABLES.READINGS,
-        KeyConditionExpression: 'device_id = :deviceId AND #ts BETWEEN :startTime AND :endTime',
+        KeyConditionExpression: 'deviceId = :deviceId AND #ts BETWEEN :startTime AND :endTime',
         ExpressionAttributeNames: {
           '#ts': 'timestamp',
         },
@@ -167,12 +167,12 @@ export async function addDeviceReading(params: {
     })
   );
 
-  // Update device's latest_reading timestamp
+  // Update device's latestReadingId timestamp
   await docClient.send(
     new UpdateCommand({
       TableName: TABLES.DEVICES,
       Key: { id: params.id },
-      UpdateExpression: 'SET latest_reading_timestamp = :timestamp',
+      UpdateExpression: 'SET latestReadingId = :timestamp',
       ExpressionAttributeValues: {
         ':timestamp': timestamp,
       },

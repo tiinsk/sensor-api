@@ -1,8 +1,8 @@
 /**
- * Auth route handlers
+ * Auth route handlers for lambda-api
  */
 
-import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { Request, Response } from 'lambda-api';
 import { z } from 'zod';
 import { getUser } from '../data/users';
 import { verifyPassword } from '../lib/password';
@@ -17,49 +17,32 @@ const LoginSchema = z.object({
  * POST /api/login
  * Login with username/password, returns JWT token
  */
-export async function login(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
+export async function login(req: Request, res: Response) {
   try {
     // Parse and validate request body
-    const body = JSON.parse(event.body || '{}');
-    const { username, password } = LoginSchema.parse(body);
+    const { username, password } = LoginSchema.parse(req.body);
 
     // Get user from database
     const user = await getUser(username);
     if (!user || user.disabled) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Unauthorized user' }),
-      };
+      return res.status(401).json({ error: 'Unauthorized user' });
     }
 
     // Verify password
     const isValid = verifyPassword(password, user.passwordHash, user.salt);
     if (!isValid) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ error: 'Unauthorized user' }),
-      };
+      return res.status(401).json({ error: 'Unauthorized user' });
     }
 
     // Generate JWT token
     const token = signUserToken(username);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ token }),
-    };
+    return res.json({ token });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid request', details: error.errors }),
-      };
-    }
-
     console.error('Login error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal server error' }),
-    };
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Invalid request', details: error.errors });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

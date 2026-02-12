@@ -1,4 +1,4 @@
-import { DynamoDBDocumentClient, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import {DynamoDBDocumentClient, GetCommand, ScanCommand} from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Device, Reading } from '../types';
 import { NotFoundError } from '../lib/errors';
@@ -51,22 +51,13 @@ export async function getAllLatestReadings(params: ArrayRequestParams) {
     // Query all non-disabled devices using the type-order-index
     // Note: This assumes 'sensor' is the default type. Adjust if you have multiple types.
     const result = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLES.DEVICES,
-        IndexName: 'type-order-index',
-        KeyConditionExpression: '#type = :type',
-        ExpressionAttributeNames: {
-          '#type': 'type',
-        },
-        ExpressionAttributeValues: {
-          ':type': 'sensor', // Adjust this if you have different device types
-        },
-        // Note: DynamoDB doesn't support offset directly, so we need to scan and skip
-        // This is inefficient and should be replaced with cursor-based pagination
         Limit: limit + offset,
       })
     );
 
+    //TODO: contains also disabled devices -> remove disabled
     const devices = (result.Items || []) as Device[];
 
     // Apply offset in application code (inefficient for large offsets)

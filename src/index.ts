@@ -3,9 +3,12 @@
  */
 
 import createAPI, { Request, Response } from 'lambda-api';
-import { APIGatewayProxyEvent, APIGatewayProxyResultV2, Context } from 'aws-lambda';
+import { APIGatewayProxyEvent, Context } from 'aws-lambda';
 
-// Device handlers (refactored for lambda-api)
+// Auth handlers
+import { login } from './handlers/auth';
+
+// Device handlers
 import {
   getAllDevicesHandler,
   getDeviceHandler,
@@ -13,14 +16,27 @@ import {
   updateDeviceHandler,
 } from './handlers/devices';
 
+// Reading handlers
+import {
+  getDeviceReadingsHandler,
+  getAllReadingsHandler,
+  addDeviceReadingHandler,
+} from './handlers/readings';
+
+// Latest readings handlers
+import {
+  getAllLatestHandler,
+  getDeviceLatestHandler,
+} from './handlers/latest';
+
+// Statistics handlers
+import {
+  getAllStatisticsHandler,
+  getDeviceStatisticsHandler,
+} from './handlers/statistics';
+
 // Auth middleware
 import { requireAuth } from './lib/auth-middleware';
-
-// TODO: Import and refactor these handlers for lambda-api
-// import { login } from './handlers/auth';
-// import { getDeviceReadingsHandler, getAllReadingsHandler, addDeviceReadingHandler } from './handlers/readings';
-// import { getAllLatestHandler, getDeviceLatestHandler } from './handlers/latest';
-// import { getAllStatisticsHandler, getDeviceStatisticsHandler } from './handlers/statistics';
 
 // Create API instance with options
 const api = createAPI({
@@ -35,7 +51,7 @@ const api = createAPI({
 api.use((req: Request, res: Response, next: () => void) => {
   res.cors({
     origin: '*',
-    methods: 'GET, POST, PUT, DELETE, OPTIONS',
+    methods: 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     headers: 'Content-Type, Authorization',
   });
   next();
@@ -44,22 +60,10 @@ api.use((req: Request, res: Response, next: () => void) => {
 // Error handler middleware
 api.use((err: any, req: Request, res: Response, next: () => void) => {
   console.error('API Error:', err);
-
-  // Lambda-api wraps the original event in req.event
   const statusCode = (err as any).statusCode || 500;
   const message = err.message || 'Internal server error';
-
   res.status(statusCode).json({ error: message });
 });
-
-// Helper to send result from handlers
-function sendResult(res: Response, result: APIGatewayProxyResultV2) {
-  if (typeof result === 'string') {
-    return res.send(result);
-  }
-
-  return res.status(result.statusCode || 200).send(result.body || '');
-}
 
 // Root
 api.get('/', async (req: Request, res: Response) => {
@@ -67,10 +71,7 @@ api.get('/', async (req: Request, res: Response) => {
 });
 
 // Auth routes
-// TODO: Refactor login handler for lambda-api
-api.post('/api/login', async (req: Request, res: Response) => {
-  res.status(501).json({ error: 'Not yet implemented - needs refactoring for lambda-api' });
-});
+api.post('/api/login', login);
 
 // Device routes
 api.get('/api/devices', requireAuth, getAllDevicesHandler);
@@ -79,38 +80,17 @@ api.post('/api/devices', requireAuth, addDeviceHandler);
 api.patch('/api/devices/:id', requireAuth, updateDeviceHandler);
 
 // Reading routes
-// TODO: Refactor reading handlers for lambda-api
-api.get('/api/devices/:id/readings', async (req: Request, res: Response) => {
-  res.status(501).json({ error: 'Not yet implemented - needs refactoring for lambda-api' });
-});
-
-api.get('/api/readings', async (req: Request, res: Response) => {
-  res.status(501).json({ error: 'Not yet implemented - needs refactoring for lambda-api' });
-});
-
-api.post('/api/devices/:id/readings', async (req: Request, res: Response) => {
-  res.status(501).json({ error: 'Not yet implemented - needs refactoring for lambda-api' });
-});
+api.get('/api/devices/:id/readings', requireAuth, getDeviceReadingsHandler);
+api.get('/api/readings', requireAuth, getAllReadingsHandler);
+api.post('/api/devices/:id/readings', requireAuth, addDeviceReadingHandler);
 
 // Latest readings routes
-// TODO: Refactor latest handlers for lambda-api
-api.get('/api/latest', async (req: Request, res: Response) => {
-  res.status(501).json({ error: 'Not yet implemented - needs refactoring for lambda-api' });
-});
-
-api.get('/api/devices/:id/latest', async (req: Request, res: Response) => {
-  res.status(501).json({ error: 'Not yet implemented - needs refactoring for lambda-api' });
-});
+api.get('/api/latest', requireAuth, getAllLatestHandler);
+api.get('/api/devices/:id/latest', requireAuth, getDeviceLatestHandler);
 
 // Statistics routes
-// TODO: Refactor statistics handlers for lambda-api
-api.get('/api/statistics', async (req: Request, res: Response) => {
-  res.status(501).json({ error: 'Not yet implemented - needs refactoring for lambda-api' });
-});
-
-api.get('/api/devices/:id/statistics', async (req: Request, res: Response) => {
-  res.status(501).json({ error: 'Not yet implemented - needs refactoring for lambda-api' });
-});
+api.get('/api/statistics', requireAuth, getAllStatisticsHandler);
+api.get('/api/devices/:id/statistics', requireAuth, getDeviceStatisticsHandler);
 
 // Export Lambda handler
 export const handler = async (event: APIGatewayProxyEvent, context: Context) => {
