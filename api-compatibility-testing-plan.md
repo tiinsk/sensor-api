@@ -11,8 +11,8 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **setup-new-api-testing**: Install Jest + Supertest in new API, create jest.config.js, add test scripts to package.json
 
 ### Phase 2: Data Seeding
-- [ ] **create-old-api-seed**: Create seed script for old API (PostgreSQL) with 3 devices, 2,200+ readings per device (including 10-min intervals), user, and API key
-- [ ] **update-new-api-seed**: Update new API seed script to match old API data exactly (same IDs, timestamps, values)
+- [x] **create-old-api-seed**: Create seed script for old API (PostgreSQL) with 3 devices, 2,200+ readings per device (including 10-min intervals), user, and API key
+- [x] **update-new-api-seed**: Update new API seed script to match old API data exactly (same IDs, timestamps, values)
 
 ### Phase 3: Test Implementation
 

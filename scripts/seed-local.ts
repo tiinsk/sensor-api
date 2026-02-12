@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import crypto from 'crypto';
 import { TABLES } from '../src/config/constants';
 
@@ -14,61 +14,204 @@ const client = new DynamoDBClient({
 
 const docClient = DynamoDBDocumentClient.from(client);
 
-// Simple password hashing (same as old API)
-function sha512(password: string, salt: string) {
+// Password hashing utilities (matches old API)
+function saltHashPassword(password: string) {
+  const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.createHmac('sha512', salt);
   hash.update(password);
-  return hash.digest('hex');
+  const passwordHash = hash.digest('hex');
+  return { salt, passwordHash };
 }
 
+/**
+ * Seed test data for API compatibility testing
+ *
+ * Creates IDENTICAL data to old API (test-data.ts)
+ * - 3 devices (2 enabled, 1 disabled)
+ * - 2,200+ readings per device with realistic intervals
+ * - 1 test user (testuser/testpassword)
+ * - 1 API key (test-api-key-12345)
+ *
+ * IMPORTANT: Uses a FIXED reference date (February 12, 2026 10:00 AM)
+ * - All timestamps are calculated relative to this date
+ * - Tests will mock Date.now() to return this same date
+ * - This ensures tests remain deterministic and never break due to calendar changes
+ */
 async function seedData() {
-  console.log('Seeding test data...\n');
+  console.log('🌱 Starting test data seed...\n');
 
-  // Seed Readings first so we can get the latest reading IDs
-  const now = new Date();
+  // Fixed reference date for deterministic testing
+  // Tests will mock Date.now() to always return this date
+  const FIXED_NOW = new Date('2026-02-12T10:00:00Z');
+  console.log(`📅 Using fixed reference date: ${FIXED_NOW.toISOString()}\n`);
+
   let readingCount = 0;
-  
-  const latestReadingTimes = {
-    'device-001': now.toISOString(),
-    'device-002': now.toISOString(),
-  };
-  
-  for (let i = 0; i < 50; i++) {
-    const time = new Date(now.getTime() - i * 10 * 60 * 1000); // Every 10 minutes
-    
-    await docClient.send(
-      new PutCommand({
-        TableName: TABLES.READINGS,
-        Item: {
-          deviceId: 'device-001',
-          timestamp: time.toISOString(),
-          temperature: 20 + Math.random() * 5,
-          humidity: 40 + Math.random() * 20,
-          pressure: 1010 + Math.random() * 10,
-          battery: 95 - i * 0.1,
-        },
-      })
-    );
-    
-    await docClient.send(
-      new PutCommand({
-        TableName: TABLES.READINGS,
-        Item: {
-          deviceId: 'device-002',
-          timestamp: time.toISOString(),
-          temperature: 5 + Math.random() * 10,
-          humidity: 60 + Math.random() * 20,
-          pressure: 1010 + Math.random() * 10,
-          battery: 90 - i * 0.1,
-        },
-      })
-    );
-    
-    readingCount += 2;
-  }
-  console.log(`✓ Seeded ${readingCount} readings`);
 
-  // Seed Devices (with latestReadingId pointing to the most recent reading)
+  // ============================================
+  // HELPER FUNCTION: Create readings for a device
+  // ============================================
+  const createReadings = (
+    deviceId: string,
+    baseTemp: number,
+    baseHumidity: number
+  ) => {
+    const deviceReadings: any[] = [];
+
+    // Yesterday (complete day with 10-minute intervals) - 144 readings
+    const yesterday = new Date(FIXED_NOW);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 144; i++) {
+      const timestamp = new Date(yesterday.getTime() + i * 10 * 60 * 1000);
+      deviceReadings.push({
+        deviceId,
+        timestamp: timestamp.toISOString(),
+        temperature: baseTemp + Math.sin(i / 24) * 3 + (Math.random() - 0.5),
+        humidity: baseHumidity + Math.cos(i / 24) * 10 + (Math.random() - 0.5) * 2,
+        pressure: 1013 + Math.sin(i / 48) * 5 + (Math.random() - 0.5),
+        battery: 95 - (i * 0.01),
+      });
+    }
+
+    // Day before yesterday (10-minute intervals) - 144 readings
+    const dayBeforeYesterday = new Date(FIXED_NOW);
+    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
+    dayBeforeYesterday.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 144; i++) {
+      const timestamp = new Date(dayBeforeYesterday.getTime() + i * 10 * 60 * 1000);
+      deviceReadings.push({
+        deviceId,
+        timestamp: timestamp.toISOString(),
+        temperature: baseTemp + Math.sin(i / 24) * 3 + (Math.random() - 0.5),
+        humidity: baseHumidity + Math.cos(i / 24) * 10 + (Math.random() - 0.5) * 2,
+        pressure: 1013 + Math.sin(i / 48) * 5 + (Math.random() - 0.5),
+        battery: 94 - (i * 0.01),
+      });
+    }
+
+    // Current day (30-minute intervals from midnight to FIXED_NOW)
+    const todayStart = new Date(FIXED_NOW);
+    todayStart.setHours(0, 0, 0, 0);
+    const minutesSinceMidnight = (FIXED_NOW.getTime() - todayStart.getTime()) / (60 * 1000);
+    const currentDayReadings = Math.floor(minutesSinceMidnight / 30);
+
+    for (let i = 0; i < currentDayReadings; i++) {
+      const timestamp = new Date(todayStart.getTime() + i * 30 * 60 * 1000);
+      deviceReadings.push({
+        deviceId,
+        timestamp: timestamp.toISOString(),
+        temperature: baseTemp + Math.sin(i / 48) * 3 + (Math.random() - 0.5),
+        humidity: baseHumidity + Math.cos(i / 48) * 10 + (Math.random() - 0.5) * 2,
+        pressure: 1013 + Math.sin(i / 96) * 5 + (Math.random() - 0.5),
+        battery: 96 - (i * 0.02),
+      });
+    }
+
+    // Previous 5 complete days (30-minute intervals) - 48 per day = 240 readings
+    // Days -3, -4, -5, -6, -7 relative to FIXED_NOW
+    for (let day = 3; day <= 7; day++) {
+      const dayStart = new Date(FIXED_NOW);
+      dayStart.setDate(dayStart.getDate() - day);
+      dayStart.setHours(0, 0, 0, 0);
+
+      for (let i = 0; i < 48; i++) {
+        const timestamp = new Date(dayStart.getTime() + i * 30 * 60 * 1000);
+        deviceReadings.push({
+          deviceId,
+          timestamp: timestamp.toISOString(),
+          temperature: baseTemp + Math.sin(i / 24) * 3 + (Math.random() - 0.5),
+          humidity: baseHumidity + Math.cos(i / 24) * 10 + (Math.random() - 0.5) * 2,
+          pressure: 1013 + Math.sin(i / 48) * 5 + (Math.random() - 0.5),
+          battery: 93 - (day * 0.5),
+        });
+      }
+    }
+
+    // January 2026 (hourly readings) - 31 days × 24 = 744 readings
+    for (let day = 1; day <= 31; day++) {
+      for (let hour = 0; hour < 24; hour++) {
+        const timestamp = new Date(Date.UTC(2026, 0, day, hour, 0, 0));
+        deviceReadings.push({
+          deviceId,
+          timestamp: timestamp.toISOString(),
+          temperature: baseTemp + Math.sin(day / 7) * 5 + (Math.random() - 0.5) * 2,
+          humidity: baseHumidity + Math.cos(day / 7) * 15 + (Math.random() - 0.5) * 3,
+          pressure: 1013 + Math.sin(day / 15) * 7 + (Math.random() - 0.5),
+          battery: 90,
+        });
+      }
+    }
+
+    // December 2025 (daily readings) - 31 readings
+    for (let day = 1; day <= 31; day++) {
+      const timestamp = new Date(Date.UTC(2025, 11, day, 12, 0, 0));
+      deviceReadings.push({
+        deviceId,
+        timestamp: timestamp.toISOString(),
+        temperature: baseTemp - 5 + Math.sin(day / 7) * 3 + (Math.random() - 0.5) * 2,
+        humidity: baseHumidity - 10 + Math.cos(day / 7) * 10 + (Math.random() - 0.5) * 3,
+        pressure: 1015 + Math.sin(day / 15) * 5 + (Math.random() - 0.5),
+        battery: 85,
+      });
+    }
+
+    // 2025 months (one reading per month) - 12 readings
+    for (let month = 0; month < 12; month++) {
+      const timestamp = new Date(Date.UTC(2025, month, 15, 12, 0, 0));
+      deviceReadings.push({
+        deviceId,
+        timestamp: timestamp.toISOString(),
+        temperature: baseTemp + Math.sin(month / 6 * Math.PI) * 10 + (Math.random() - 0.5) * 2,
+        humidity: baseHumidity + Math.cos(month / 6 * Math.PI) * 20 + (Math.random() - 0.5) * 3,
+        pressure: 1013 + Math.sin(month / 12 * Math.PI) * 8 + (Math.random() - 0.5),
+        battery: 80 - month,
+      });
+    }
+
+    return deviceReadings;
+  };
+
+  // ============================================
+  // SEED READINGS
+  // ============================================
+  const allReadings: any[] = [];
+
+  // Create readings for device-001 (indoor - warmer, moderate humidity)
+  allReadings.push(...createReadings('device-001', 21, 45));
+
+  // Create readings for device-002 (outdoor - cooler, higher humidity)
+  allReadings.push(...createReadings('device-002', 8, 65));
+
+  // Create readings for device-003 (disabled device)
+  allReadings.push(...createReadings('device-003', 20, 50));
+
+  // Insert all readings
+  for (const reading of allReadings) {
+    await docClient.send(
+      new PutCommand({
+        TableName: TABLES.READINGS,
+        Item: reading,
+      })
+    );
+    readingCount++;
+  }
+  console.log(`✓ Seeded ${readingCount} readings (${Math.floor(readingCount / 3)} per device)`);
+
+  // Find latest reading timestamp for each device (for latestReadingId)
+  const latestReadingTimes: Record<string, string> = {};
+  for (const deviceId of ['device-001', 'device-002', 'device-003']) {
+    const deviceReadings = allReadings.filter(r => r.deviceId === deviceId);
+    const latest = deviceReadings.sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )[0];
+    latestReadingTimes[deviceId] = latest.timestamp;
+  }
+
+  // ============================================
+  // SEED DEVICES
+  // ============================================
   const devices = [
     {
       id: 'device-001',
@@ -79,7 +222,6 @@ async function seedData() {
         type: 'inside',
       },
       type: 'ruuvi',
-      sensorInfo: 'Ruuvi Tag Indoor',
       disabled: false,
       order: 1,
       latestReadingId: latestReadingTimes['device-001'],
@@ -93,7 +235,6 @@ async function seedData() {
         type: 'outside',
       },
       type: 'ruuvi',
-      sensorInfo: 'Ruuvi Tag Outdoor',
       disabled: false,
       order: 2,
       latestReadingId: latestReadingTimes['device-002'],
@@ -107,9 +248,9 @@ async function seedData() {
         type: 'inside',
       },
       type: 'sensorbug',
-      sensorInfo: 'Sensorbug v2',
       disabled: true,
       order: 3,
+      latestReadingId: latestReadingTimes['device-003'],
     },
   ];
 
@@ -123,13 +264,13 @@ async function seedData() {
   }
   console.log('✓ Seeded 3 devices');
 
-  // Seed User
-  const salt = crypto.randomBytes(16).toString('hex');
-  const passwordHash = sha512('testpassword', salt);
-  
+  // ============================================
+  // SEED USER
+  // ============================================
+  const { salt, passwordHash } = saltHashPassword('testpassword');
   await docClient.send(
     new PutCommand({
-        TableName: TABLES.USERS,
+      TableName: TABLES.USERS,
       Item: {
         username: 'testuser',
         passwordHash: passwordHash,
@@ -140,19 +281,22 @@ async function seedData() {
   );
   console.log('✓ Seeded 1 user (testuser / testpassword)');
 
-  // Seed API Key
+  // ============================================
+  // SEED API KEY
+  // ============================================
   await docClient.send(
     new PutCommand({
-        TableName: TABLES.AUTH,
+      TableName: TABLES.AUTH,
       Item: {
         apiKey: 'test-api-key-12345',
-        description: 'Test API key for development',
+        description: 'Test API key for sensor-data-sender',
       },
     })
   );
   console.log('✓ Seeded 1 API key (test-api-key-12345)');
 
   console.log('\n✅ Seed complete!');
+  console.log(`📊 Total: 3 devices, ${readingCount} readings, 1 user, 1 API key\n`);
 }
 
 seedData().catch(console.error);
