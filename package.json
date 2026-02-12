@@ -4,6 +4,7 @@
   "description": "Sensor API - AWS Lambda + DynamoDB",
   "scripts": {
     "build": "tsc",
+    "build:watch": "tsc --watch --preserveWatchOutput",
     "bundle": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/bundle/index.js --external:@aws-sdk/* --external:aws-sdk",
     "cdk": "cd cdk && cdk",
     "cdk:synth": "cd cdk && cdk synth",
@@ -17,7 +18,7 @@
     "sam:env": "dotenv -c -- node_modules/.bin/ts-node scripts/generate-sam-env.ts",
     "create:user": "dotenv -c -- node_modules/.bin/ts-node scripts/create-user.ts",
     "create:api-key": "dotenv -c -- node_modules/.bin/ts-node scripts/create-api-key.ts",
-    "sam:local": "npm run sam:env && sam local start-api --env-vars env.json --warm-containers EAGER & npm run bundle -- --watch",
+    "sam:local": "npm run sam:env && npm run build:watch & sam local start-api --env-vars env.json --warm-containers EAGER --docker-network sensor-api_default & npm run bundle -- --watch",
     "sam:invoke": "npm run sam:env && sam local invoke SensorApiFunction --env-vars env.json --event events/test-event.json"
   },
   "author": "Tiina Koskiranta",

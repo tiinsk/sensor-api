@@ -9,10 +9,12 @@ import {env} from './env';
 
 export function createDynamoDBClient(): DynamoDBDocumentClient {
   const useLocalDb = env.USE_LOCAL_DB === 'true';
-
-  let endpoint = 'http://localhost:8000';
-  if(process.env.AWS_SAM_LOCAL) {
-    endpoint = 'http://dynamodb-local:8000'
+  
+  let endpoint = 'http://localhost:8000'; // When running locally (scripts), use localhost
+  if (process.env.AWS_EXECUTION_ENV) {
+    // Running in Lambda runtime (including SAM Local)
+    // Use the container name from docker-compose
+    endpoint = 'http://sensor-api-dynamodb:8000';
   }
 
   const client = new DynamoDBClient({

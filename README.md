@@ -375,6 +375,15 @@ npm run cdk:destroy
     // Use AWS SDK to retrieve secret value at runtime
     ```
   - Files: `cdk/lib/api-stack.ts`, `src/lib/jwt.ts`, `src/lib/env.ts`
+- [ ] **Improve authentication security**
+  - **Issue 1:** API keys never expire and can't be revoked individually (only by deleting from DB)
+    - Solution: Add `expiresAt` and `revoked` fields to Auth table, check on validation
+  - **Issue 2:** JWT tokens are generated in `sensor-data-sender` repo (client-side), exposing JWT_SECRET
+    - Solution: Implement device auth flow - devices send API key, server generates and returns JWT token
+    - This keeps JWT_SECRET server-side only
+  - **Issue 3:** No API key rotation strategy
+    - Solution: Add rotation script that generates new key, marks old as deprecated with grace period
+  - Files: `src/data/auth.ts`, `src/lib/auth-middleware.ts`, `sensor-data-sender` repo
 
 ### Medium Priority
 
