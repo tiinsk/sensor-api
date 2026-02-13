@@ -30,8 +30,25 @@ This document tracks behavioral differences discovered during compatibility test
 
 ## Latest Readings
 
-_(To be documented as tests are written)_
+### GET /api/latest
+**Route mismatch**
+- Old API: Uses `/api/devices/latest-readings` route
+- New API: Uses `/api/latest` route
 
+**Reading timestamp field:**
+- Old API: Uses `created_at` field
+- New API: Uses `timestamp` field
+- Same value, different field name
+
+### GET /api/devices/:id/latest
+**Route mismatch**
+- Old API: Uses `/api/devices/:id/latest-readings` route
+- New API: Uses `/api/devices/:id/latest` route
+
+**Reading timestamp field:**
+- Old API: Uses `created_at` field
+- New API: Uses `timestamp` field
+- Same value, different field name
 ---
 
 ## Statistics

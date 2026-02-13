@@ -48,20 +48,23 @@ export async function getAllLatestReadings(params: ArrayRequestParams) {
   const { limit, offset } = params;
 
   try {
-    // Query all non-disabled devices using the type-order-index
-    // Note: This assumes 'sensor' is the default type. Adjust if you have multiple types.
+    // Scan all devices to filter disabled and get accurate count
     const result = await docClient.send(
       new ScanCommand({
         TableName: TABLES.DEVICES,
-        Limit: limit + offset,
       })
     );
 
-    //TODO: contains also disabled devices -> remove disabled
-    const devices = (result.Items || []) as Device[];
+    // Filter out disabled devices and sort by order
+    const allDevices = ((result.Items || []) as Device[])
+      .filter(device => !device.disabled)
+      .sort((a, b) => a.order - b.order);
 
-    // Apply offset in application code (inefficient for large offsets)
-    const paginatedDevices = devices.slice(offset, offset + limit);
+    // Get total count after filtering
+    const totalCount = allDevices.length;
+
+    // Apply offset and limit for pagination
+    const paginatedDevices = allDevices.slice(offset, offset + limit);
 
     // Fetch latest reading for each device
     const devicesWithReadings = await Promise.all(
@@ -72,15 +75,27 @@ export async function getAllLatestReadings(params: ArrayRequestParams) {
           device.latestReadingId
         );
         return {
-          ...device,
-          reading,
+          id: device.id,
+          name: device.name,
+          sensorInfo: device.sensorInfo,
+          order: device.order,
+          type: device.type,
+          location: device.location,
+          disabled: device.disabled,
+          reading: reading ? {
+            temperature: reading.temperature,
+            humidity: reading.humidity,
+            pressure: reading.pressure,
+            battery: reading.battery,
+            timestamp: reading.timestamp,
+          } : null,
         };
       })
     );
 
     return {
       count: devicesWithReadings.length,
-      totCount: devices.length,
+      totCount: totalCount,
       limit,
       values: devicesWithReadings,
     };
@@ -108,6 +123,10 @@ export async function getDeviceLatestReading(deviceId: string) {
     }
 
     const device = deviceResult.Item as Device;
+    
+    if (device.disabled) {
+      throw new NotFoundError(`Device with id ${deviceId} not found`);
+    }
 
     // Fetch latest reading
     const reading = await fetchLatestReading(
@@ -117,8 +136,20 @@ export async function getDeviceLatestReading(deviceId: string) {
     );
 
     return {
-      ...device,
-      reading,
+      id: device.id,
+      name: device.name,
+      sensorInfo: device.sensorInfo,
+      order: device.order,
+      type: device.type,
+      location: device.location,
+      disabled: device.disabled,
+      reading: reading ? {
+        temperature: reading.temperature,
+        humidity: reading.humidity,
+        pressure: reading.pressure,
+        battery: reading.battery,
+        timestamp: reading.timestamp,
+      } : null,
     };
   } catch (error) {
     console.error(`Failed to get latest reading for device ${deviceId}:`, error);

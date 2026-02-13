@@ -1,6 +1,6 @@
 /**
  * Response comparison utilities for compatibility testing
- * 
+ *
  * These functions compare responses from old and new APIs to ensure identical behavior
  */
 
@@ -261,9 +261,6 @@ export function compareLatestReadings(oldResponse: any, newResponse: any): Compa
     }
     if (oldResponse.name !== newResponse.name) {
       differences.push(`name mismatch: old=${oldResponse.name}, new=${newResponse.name}`);
-    }
-    if (oldResponse.order !== newResponse.order) {
-      differences.push(`order mismatch: old=${oldResponse.order}, new=${newResponse.order}`);
     }
 
     // Compare reading

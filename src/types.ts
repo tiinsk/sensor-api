@@ -28,7 +28,6 @@ export interface Device {
 }
 
 export interface Reading {
-  deviceId: string;
   timestamp: string; // ISO 8601 timestamp (used as sort key)
   temperature: number | null;
   humidity: number | null;
