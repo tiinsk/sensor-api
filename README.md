@@ -341,16 +341,39 @@ npm run cdk:destroy
 ### High Priority
 
 - [ ] **Replace offset pagination with cursor-based pagination**
-  - Current: Uses `limit + offset` (scans extra items, inefficient)
-  - Target: Use `LastEvaluatedKey` / `ExclusiveStartKey` (DynamoDB native)
-  - Impact: Requires frontend changes to handle cursor tokens instead of page numbers
-  - Files: `src/data/devices.ts`, API response format, frontend pagination
-  - Changes to be made:
-    - Current:
-      - GET /api/devices?limit=10
-        → Returns: { items: [...], nextToken: "abc123" }
-    - Change:
-      - GET /api/devices?limit=10&nextToken=abc123 → Returns next page
+  - **Problem:** Current implementation scans ALL items to get accurate `totCount`, which is inefficient
+    - For devices endpoint: Currently scans entire table on every request just to count items
+    - Doesn't scale well as data grows
+  - **Solution:** Use DynamoDB's native cursor-based pagination with `LastEvaluatedKey`
+    - No more full table scans
+    - Pay-per-query based on items actually read
+    - Infinitely scalable
+  - **API Changes:**
+    ```typescript
+    // Current (offset-based):
+    GET /api/devices?limit=10&offset=20
+    → { count: 10, totCount: 250, limit: 10, values: [...] }
+    
+    // New (cursor-based):
+    GET /api/devices?limit=10
+    → { values: [...], nextCursor: "eyJpZCI6ImRldmljZS0wMTAifQ==", hasMore: true }
+    
+    GET /api/devices?limit=10&cursor=eyJpZCI6ImRldmljZS0wMTAifQ==
+    → { values: [...], nextCursor: "...", hasMore: true }
+    ```
+  - **Trade-offs:**
+    - ✅ Much faster queries (only reads what's needed)
+    - ✅ Lower DynamoDB costs
+    - ✅ Scales to millions of items
+    - ❌ Can't jump to arbitrary page (e.g., "go to page 5")
+    - ❌ Can't show total count or "page X of Y" in UI
+    - ❌ Frontend must handle cursor tokens instead of page numbers
+  - **Alternative (keep totCount):** Maintain count in metadata table
+    - Store counts: `{ enabled: 2, disabled: 1, total: 3 }`
+    - Update via DynamoDB Streams or in transactions
+    - Allows keeping current API while still being efficient
+  - **Impact:** Requires frontend changes to handle cursor tokens instead of page numbers
+  - **Files:** `src/data/devices.ts`, `src/data/readings.ts`, API response types, frontend pagination components
 
 - [ ] **Security Best Practice: Use AWS Secrets Manager for JWT_SECRET**
   - Current: `JWT_SECRET` stored as Lambda environment variable (visible in AWS Console)

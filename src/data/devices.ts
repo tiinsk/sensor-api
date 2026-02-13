@@ -52,31 +52,33 @@ function mapToDynamoItem(device: Device) {
 export async function getAllDevices(params: ArrayRequestParams & { includeDisabled: boolean }) {
   const { limit, offset, includeDisabled } = params;
 
-  // DynamoDB doesn't support offset directly, so we scan and skip
-  // For production, use LastEvaluatedKey pagination instead
+  // Scan all devices to get total count and apply filters
+  // Note: For large datasets, consider using a count table or caching
   const result = await docClient.send(
     new ScanCommand({
       TableName: TABLES.DEVICES,
-      Limit: limit + offset, // Fetch more to handle offset
     })
   );
 
-  let items = result.Items || [];
+  let allItems = result.Items || [];
 
   // Filter disabled devices if needed
   if (!includeDisabled) {
-    items = items.filter((item) => !item.disabled);
+    allItems = allItems.filter((item) => !item.disabled);
   }
 
   // Sort by order
-  items.sort((a, b) => a.order - b.order);
+  allItems.sort((a, b) => a.order - b.order);
 
-  // Apply offset and limit
-  const paginatedItems = items.slice(offset, offset + limit);
+  // Get total count after filtering
+  const totalCount = allItems.length;
+
+  // Apply offset and limit for pagination
+  const paginatedItems = allItems.slice(offset, offset + limit);
 
   return {
     count: paginatedItems.length,
-    totCount: items.length,
+    totCount: totalCount,
     limit,
     values: paginatedItems.map(mapToDevice),
   };
@@ -113,7 +115,7 @@ export async function getDevice(
     throw new NotFoundError(`Device with id ${deviceId} not found`);
   }
 
-  if (!includeDisabled && result.Item.Disabled) {
+  if (!includeDisabled && result.Item.disabled) {
     throw new NotFoundError(`Device with id ${deviceId} not found`);
   }
 

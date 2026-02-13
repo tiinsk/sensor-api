@@ -28,12 +28,6 @@ This document tracks behavioral differences discovered during compatibility test
 
 ---
 
-## Device Endpoints
-
-_(To be documented as tests are written)_
-
----
-
 ## Latest Readings
 
 _(To be documented as tests are written)_
