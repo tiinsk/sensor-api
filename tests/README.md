@@ -88,6 +88,10 @@ If tests fail with data mismatches:
    npm run seed
    
    # New API (in new API folder)
+   # For clean slate, recreate DynamoDB tables first
+   npm run dynamodb:stop
+   npm run dynamodb:start
+   npm run tables:create
    npm run seed:local
    ```
 

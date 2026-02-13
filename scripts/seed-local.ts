@@ -24,6 +24,26 @@ function saltHashPassword(password: string) {
 }
 
 /**
+ * Seeded random number generator for deterministic test data
+ * Uses a simple Linear Congruential Generator (LCG)
+ */
+class SeededRandom {
+  private seed: number;
+
+  constructor(seed: number) {
+    this.seed = seed;
+  }
+
+  next(): number {
+    // Multiply seed and add "random" number to the seed.
+    // These specific numbers aren't random - they're carefully chosen constants that mathematicians found work well for generating "random-looking" sequences. They're the same constants used in the GNU C library.
+    // bitwise AND keeps only the first 31 bits
+    this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff;
+    return this.seed / 0x7fffffff;
+  }
+}
+
+/**
  * Seed test data for API compatibility testing
  *
  * Creates IDENTICAL data to old API (test-data.ts)
@@ -53,7 +73,8 @@ async function seedData() {
   const createReadings = (
     deviceId: string,
     baseTemp: number,
-    baseHumidity: number
+    baseHumidity: number,
+    rng: SeededRandom
   ) => {
     const deviceReadings: any[] = [];
 
@@ -67,9 +88,9 @@ async function seedData() {
       deviceReadings.push({
         deviceId,
         timestamp: timestamp.toISOString(),
-        temperature: baseTemp + Math.sin(i / 24) * 3 + (Math.random() - 0.5),
-        humidity: baseHumidity + Math.cos(i / 24) * 10 + (Math.random() - 0.5) * 2,
-        pressure: 1013 + Math.sin(i / 48) * 5 + (Math.random() - 0.5),
+        temperature: baseTemp + Math.sin(i / 24) * 3 + (rng.next() - 0.5),
+        humidity: baseHumidity + Math.cos(i / 24) * 10 + (rng.next() - 0.5) * 2,
+        pressure: 1013 + Math.sin(i / 48) * 5 + (rng.next() - 0.5),
         battery: 95 - (i * 0.01),
       });
     }
@@ -84,9 +105,9 @@ async function seedData() {
       deviceReadings.push({
         deviceId,
         timestamp: timestamp.toISOString(),
-        temperature: baseTemp + Math.sin(i / 24) * 3 + (Math.random() - 0.5),
-        humidity: baseHumidity + Math.cos(i / 24) * 10 + (Math.random() - 0.5) * 2,
-        pressure: 1013 + Math.sin(i / 48) * 5 + (Math.random() - 0.5),
+        temperature: baseTemp + Math.sin(i / 24) * 3 + (rng.next() - 0.5),
+        humidity: baseHumidity + Math.cos(i / 24) * 10 + (rng.next() - 0.5) * 2,
+        pressure: 1013 + Math.sin(i / 48) * 5 + (rng.next() - 0.5),
         battery: 94 - (i * 0.01),
       });
     }
@@ -102,9 +123,9 @@ async function seedData() {
       deviceReadings.push({
         deviceId,
         timestamp: timestamp.toISOString(),
-        temperature: baseTemp + Math.sin(i / 48) * 3 + (Math.random() - 0.5),
-        humidity: baseHumidity + Math.cos(i / 48) * 10 + (Math.random() - 0.5) * 2,
-        pressure: 1013 + Math.sin(i / 96) * 5 + (Math.random() - 0.5),
+        temperature: baseTemp + Math.sin(i / 48) * 3 + (rng.next() - 0.5),
+        humidity: baseHumidity + Math.cos(i / 48) * 10 + (rng.next() - 0.5) * 2,
+        pressure: 1013 + Math.sin(i / 96) * 5 + (rng.next() - 0.5),
         battery: 96 - (i * 0.02),
       });
     }
@@ -121,9 +142,9 @@ async function seedData() {
         deviceReadings.push({
           deviceId,
           timestamp: timestamp.toISOString(),
-          temperature: baseTemp + Math.sin(i / 24) * 3 + (Math.random() - 0.5),
-          humidity: baseHumidity + Math.cos(i / 24) * 10 + (Math.random() - 0.5) * 2,
-          pressure: 1013 + Math.sin(i / 48) * 5 + (Math.random() - 0.5),
+          temperature: baseTemp + Math.sin(i / 24) * 3 + (rng.next() - 0.5),
+          humidity: baseHumidity + Math.cos(i / 24) * 10 + (rng.next() - 0.5) * 2,
+          pressure: 1013 + Math.sin(i / 48) * 5 + (rng.next() - 0.5),
           battery: 93 - (day * 0.5),
         });
       }
@@ -136,9 +157,9 @@ async function seedData() {
         deviceReadings.push({
           deviceId,
           timestamp: timestamp.toISOString(),
-          temperature: baseTemp + Math.sin(day / 7) * 5 + (Math.random() - 0.5) * 2,
-          humidity: baseHumidity + Math.cos(day / 7) * 15 + (Math.random() - 0.5) * 3,
-          pressure: 1013 + Math.sin(day / 15) * 7 + (Math.random() - 0.5),
+          temperature: baseTemp + Math.sin(day / 7) * 5 + (rng.next() - 0.5) * 2,
+          humidity: baseHumidity + Math.cos(day / 7) * 15 + (rng.next() - 0.5) * 3,
+          pressure: 1013 + Math.sin(day / 15) * 7 + (rng.next() - 0.5),
           battery: 90,
         });
       }
@@ -150,9 +171,9 @@ async function seedData() {
       deviceReadings.push({
         deviceId,
         timestamp: timestamp.toISOString(),
-        temperature: baseTemp - 5 + Math.sin(day / 7) * 3 + (Math.random() - 0.5) * 2,
-        humidity: baseHumidity - 10 + Math.cos(day / 7) * 10 + (Math.random() - 0.5) * 3,
-        pressure: 1015 + Math.sin(day / 15) * 5 + (Math.random() - 0.5),
+        temperature: baseTemp - 5 + Math.sin(day / 7) * 3 + (rng.next() - 0.5) * 2,
+        humidity: baseHumidity - 10 + Math.cos(day / 7) * 10 + (rng.next() - 0.5) * 3,
+        pressure: 1015 + Math.sin(day / 15) * 5 + (rng.next() - 0.5),
         battery: 85,
       });
     }
@@ -163,9 +184,9 @@ async function seedData() {
       deviceReadings.push({
         deviceId,
         timestamp: timestamp.toISOString(),
-        temperature: baseTemp + Math.sin(month / 6 * Math.PI) * 10 + (Math.random() - 0.5) * 2,
-        humidity: baseHumidity + Math.cos(month / 6 * Math.PI) * 20 + (Math.random() - 0.5) * 3,
-        pressure: 1013 + Math.sin(month / 12 * Math.PI) * 8 + (Math.random() - 0.5),
+        temperature: baseTemp + Math.sin(month / 6 * Math.PI) * 10 + (rng.next() - 0.5) * 2,
+        humidity: baseHumidity + Math.cos(month / 6 * Math.PI) * 20 + (rng.next() - 0.5) * 3,
+        pressure: 1013 + Math.sin(month / 12 * Math.PI) * 8 + (rng.next() - 0.5),
         battery: 80 - month,
       });
     }
@@ -178,14 +199,19 @@ async function seedData() {
   // ============================================
   const allReadings: any[] = [];
 
+  // Create seeded random generators for each device (deterministic)
+  const rng001 = new SeededRandom(1);
+  const rng002 = new SeededRandom(2);
+  const rng003 = new SeededRandom(3);
+
   // Create readings for device-001 (indoor - warmer, moderate humidity)
-  allReadings.push(...createReadings('device-001', 21, 45));
+  allReadings.push(...createReadings('device-001', 21, 45, rng001));
 
   // Create readings for device-002 (outdoor - cooler, higher humidity)
-  allReadings.push(...createReadings('device-002', 8, 65));
+  allReadings.push(...createReadings('device-002', 8, 65, rng002));
 
   // Create readings for device-003 (disabled device)
-  allReadings.push(...createReadings('device-003', 20, 50));
+  allReadings.push(...createReadings('device-003', 20, 50, rng003));
 
   // Insert all readings
   for (const reading of allReadings) {
