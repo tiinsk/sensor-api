@@ -17,7 +17,8 @@ This plan will create comprehensive integration tests to verify that both the **
 ### Phase 3: Test Implementation
 
 #### Shared Utilities
-- [ ] **create-test-utilities**: Create shared test utilities (test-server, test-data) and comparison utilities for compatibility tests
+- [x] **create-test-utilities**: Create shared test utilities (test-server config, test-data) and comparison utilities for compatibility tests
+  - Note: Tests assume servers are already running manually (simplified approach)
 
 #### Compatibility Tests (compare old vs new)
 - [ ] **implement-compatibility-auth-tests**: Write compatibility tests for POST /api/login endpoint (compare old vs new API)
