@@ -21,7 +21,7 @@ This plan will create comprehensive integration tests to verify that both the **
   - Note: Tests assume servers are already running manually (simplified approach)
 
 #### Compatibility Tests (compare old vs new)
-- [ ] **implement-compatibility-auth-tests**: Write compatibility tests for POST /api/login endpoint (compare old vs new API)
+- [x] **implement-compatibility-auth-tests**: Write compatibility tests for POST /api/login endpoint (compare old vs new API)
 - [ ] **implement-compatibility-device-tests**: Write compatibility tests for GET /api/devices and GET /api/devices/:id endpoints (compare old vs new API)
 - [ ] **implement-compatibility-latest-tests**: Write compatibility tests for GET /api/latest endpoint (compare old vs new API)
 - [ ] **implement-compatibility-statistics-tests**: Write compatibility tests for GET /api/statistics endpoint (compare old vs new API)
@@ -36,7 +36,8 @@ This plan will create comprehensive integration tests to verify that both the **
 - [ ] **implement-integration-readings-tests**: Write integration tests for GET /api/readings with all timeframe/level combinations for temperature, humidity, AND pressure
 - [ ] **implement-integration-add-reading-tests**: Write integration tests for POST /api/devices/:id/readings endpoint
 
-### Phase 4: Validation
+### Phase 4: Validation & Documentation
+- [ ] **document-api-differences**: Document all API behavioral differences discovered during testing (e.g., login response format, auth header format)
 - [ ] **fix-time-bucketing**: Test and fix any time bucketing differences between PostgreSQL date_trunc and JavaScript truncateTime
 - [ ] **verify-all-tests-pass**: Run compatibility tests (old vs new) and integration tests (new API standalone) and verify all pass
 

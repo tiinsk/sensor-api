@@ -17,7 +17,6 @@ export async function checkServer(url: string, serverName: string): Promise<bool
     const response = await fetch(`${url}/api/devices`, { method: 'GET' });
     // We expect 401 (unauthorized) or 200 (if auth not required) - both mean server is running
     if (response.status === 401 || response.status === 200) {
-      console.log(`✓ ${serverName} is running at ${url}`);
       return true;
     }
     console.error(`✗ ${serverName} returned unexpected status ${response.status}`);
@@ -34,7 +33,6 @@ export async function checkServer(url: string, serverName: string): Promise<bool
  * Call this in beforeAll() in your test suites
  */
 export async function verifyServersRunning(): Promise<void> {
-  console.log('\n🔍 Checking if servers are running...\n');
 
   const oldApiOk = await checkServer(OLD_API_URL, 'Old API');
   const newApiOk = await checkServer(NEW_API_URL, 'New API');
@@ -50,6 +48,4 @@ export async function verifyServersRunning(): Promise<void> {
 
     throw new Error('Both servers are not running. Please start them manually.');
   }
-
-  console.log('\n✓ All servers are ready\n');
 }
