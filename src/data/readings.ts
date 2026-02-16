@@ -6,11 +6,12 @@ import { QueryCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { getDevice } from './devices';
 import { TABLES } from '../config/constants';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 const docClient = createDynamoDBClient();
 
 export type ReadingType = 'temperature' | 'humidity' | 'pressure' | 'lux' | 'battery';
-export type TimeLevel = '10 minutes' | '30 minutes' | 'day' | 'week' | 'month';
+export type TimeLevel = '30 minutes' | 'day' | 'week' | 'month';
 
 interface Reading {
   deviceId: string;
@@ -31,6 +32,7 @@ export async function getDeviceReadings(params: {
   endTime: string;
   types: ReadingType[];
   level: TimeLevel;
+  timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to 'UTC'
 }) {
   // Verify device exists
   const device = await getDevice(params.deviceId);
@@ -59,9 +61,10 @@ export async function getDeviceReadings(params: {
   // Aggregate readings by time level and type
   // NOTE: In PostgreSQL this was done with date_trunc/date_bin and GROUP BY
   // In DynamoDB, we do it in application code
+  const timezone = params.timezone || 'UTC';
   const aggregatedByType = params.types.map((type) => ({
     type,
-    values: aggregateReadings(readings, type, params.level),
+    values: aggregateReadings(readings, type, params.level, timezone),
   }));
 
   return {
@@ -80,6 +83,7 @@ export async function getAllReadings(params: {
   level: TimeLevel;
   limit: number;
   offset: number;
+  timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to 'UTC'
 }) {
   // Get devices (reusing device pagination)
   const { getAllDevices } = await import('./devices.js');
@@ -115,9 +119,10 @@ export async function getAllReadings(params: {
   const allReadings = await Promise.all(readingsPromises);
 
   // Aggregate readings
+  const timezone = params.timezone || 'UTC';
   const values = allReadings.map((deviceReadings) => ({
     id: deviceReadings.deviceId,
-    values: aggregateReadings(deviceReadings.readings, params.type, params.level),
+    values: aggregateReadings(deviceReadings.readings, params.type, params.level, timezone),
   }));
 
   return {
@@ -189,7 +194,8 @@ export async function addDeviceReading(params: {
 function aggregateReadings(
   readings: Reading[],
   type: ReadingType,
-  level: TimeLevel
+  level: TimeLevel,
+  timezone: string
 ): Array<{ time: string; avg: number; min: number; max: number }> {
   if (readings.length === 0) return [];
 
@@ -200,7 +206,7 @@ function aggregateReadings(
     const value = reading[type];
     if (value === undefined || value === null) return;
 
-    const bucketKey = truncateTime(reading.timestamp, level);
+    const bucketKey = truncateTime(reading.timestamp, level, timezone);
     if (!buckets.has(bucketKey)) {
       buckets.set(bucketKey, []);
     }
@@ -222,38 +228,39 @@ function aggregateReadings(
 }
 
 /**
- * Truncate timestamp to time level bucket
+ * Truncate timestamp to time level bucket using specified timezone
+ * Matches PostgreSQL's date_trunc behavior with timezone support
  */
-function truncateTime(timestamp: string, level: TimeLevel): string {
-  const date = new Date(timestamp);
+function truncateTime(timestamp: string, level: TimeLevel, timezone: string): string {
+  // Convert UTC timestamp to the target timezone
+  const utcDate = new Date(timestamp);
+  const zonedDate = toZonedTime(utcDate, timezone);
 
+  // Truncate the date components according to level
   switch (level) {
-    case '10 minutes':
-      date.setMinutes(Math.floor(date.getMinutes() / 10) * 10, 0, 0);
-      return date.toISOString();
-
     case '30 minutes':
-      date.setMinutes(Math.floor(date.getMinutes() / 30) * 30, 0, 0);
-      return date.toISOString();
+      zonedDate.setMinutes(Math.floor(zonedDate.getMinutes() / 30) * 30, 0, 0);
+      break;
 
     case 'day':
-      date.setHours(0, 0, 0, 0);
-      return date.toISOString().split('T')[0];
+      zonedDate.setHours(0, 0, 0, 0);
+      break;
 
     case 'week': {
-      const day = date.getDay();
-      const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Monday as start
-      date.setDate(diff);
-      date.setHours(0, 0, 0, 0);
-      return date.toISOString().split('T')[0];
+      const dayOfWeek = zonedDate.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      zonedDate.setDate(zonedDate.getDate() - daysToMonday);
+      zonedDate.setHours(0, 0, 0, 0);
+      break;
     }
 
     case 'month':
-      date.setDate(1);
-      date.setHours(0, 0, 0, 0);
-      return date.toISOString().split('T')[0].substring(0, 7); // YYYY-MM
-
-    default:
-      return timestamp;
+      zonedDate.setDate(1);
+      zonedDate.setHours(0, 0, 0, 0);
+      break;
   }
+
+  // Convert back to UTC
+  const utcResult = fromZonedTime(zonedDate, timezone);
+  return utcResult.toISOString();
 }

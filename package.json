@@ -33,6 +33,7 @@
     "@aws-sdk/lib-dynamodb": "^3.709.0",
     "aws-cdk-lib": "^2.170.0",
     "constructs": "^10.4.2",
+    "date-fns-tz": "^3.2.0",
     "dotenv-cli": "^11.0.0",
     "jsonwebtoken": "^9.0.2",
     "lambda-api": "^1.0.3",

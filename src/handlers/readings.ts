@@ -10,17 +10,22 @@ import { isHttpError } from '../lib/errors';
 const GetDeviceReadingsSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
-  type: z.enum(['temperature', 'humidity', 'pressure', 'battery']),
-  level: z.enum(['10 minutes', '30 minutes', 'day', 'week', 'month']),
+  types: z
+    .string()
+    .transform((str) => str.split(',').map((t) => t.trim()))
+    .pipe(z.array(z.enum(['temperature', 'humidity', 'pressure', 'battery']))),
+  level: z.enum(['30 minutes', 'day', 'week', 'month']),
+  timezone: z.string().optional(), // IANA timezone (e.g., 'Europe/Helsinki'), defaults to UTC
 });
 
 const GetAllReadingsSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
   type: z.enum(['temperature', 'humidity', 'pressure', 'battery']),
-  level: z.enum(['10 minutes', '30 minutes', 'day', 'week', 'month']),
+  level: z.enum(['30 minutes', 'day', 'week', 'month']),
   limit: z.coerce.number().int().min(1).max(100).default(100),
   offset: z.coerce.number().int().min(0).default(0),
+  timezone: z.string().optional(), // IANA timezone (e.g., 'Europe/Helsinki'), defaults to UTC
 });
 
 const AddReadingSchema = z.object({
@@ -41,15 +46,16 @@ export async function getDeviceReadingsHandler(req: Request, res: Response) {
       return res.status(400).json({ error: 'Device ID is required' });
     }
 
-    // Parse query parameters
+    // Parse and validate query parameters
     const query = GetDeviceReadingsSchema.parse(req.query);
 
     const result = await getDeviceReadings({
       deviceId,
       startTime: query.startTime,
       endTime: query.endTime,
-      types: [query.type], // Convert single type to array
+      types: query.types,
       level: query.level,
+      timezone: query.timezone,
     });
 
     return res.json(result);
@@ -81,6 +87,7 @@ export async function getAllReadingsHandler(req: Request, res: Response) {
       level: query.level,
       limit: query.limit,
       offset: query.offset,
+      timezone: query.timezone,
     });
 
     return res.json(result);

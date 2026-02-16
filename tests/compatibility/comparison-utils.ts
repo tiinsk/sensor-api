@@ -147,62 +147,72 @@ export function compareStatistics(oldResponse: any, newResponse: any, tolerance:
 /**
  * Compare aggregated readings responses
  */
-export function compareReadings(oldResponse: any, newResponse: any, tolerance: number = 0.001): ComparisonResult {
+/**
+ * Compare responses from GET /api/readings (all devices, single type)
+ */
+export function compareAllReadings(oldResponse: any, newResponse: any, tolerance: number = 0.001): ComparisonResult {
   const differences: string[] = [];
 
-  // For single device response (GET /api/devices/:id/readings)
-  if (oldResponse.id && newResponse.id) {
-    if (oldResponse.id !== newResponse.id) {
-      differences.push(`id mismatch: old=${oldResponse.id}, new=${newResponse.id}`);
-    }
-
-    const oldValues = oldResponse.values || [];
-    const newValues = newResponse.values || [];
-
-    if (oldValues.length !== newValues.length) {
-      differences.push(`Values array length mismatch: old=${oldValues.length}, new=${newValues.length}`);
-    }
-
-    // Compare each type's readings
-    for (let i = 0; i < Math.min(oldValues.length, newValues.length); i++) {
-      const oldType = oldValues[i];
-      const newType = newValues[i];
-
-      if (oldType.type !== newType.type) {
-        differences.push(`Type ${i}: type mismatch (old=${oldType.type}, new=${newType.type})`);
-        continue;
-      }
-
-      compareReadingValues(oldType.values, newType.values, `${oldResponse.id}.${oldType.type}`, differences, tolerance);
-    }
+  if (oldResponse.count !== newResponse.count) {
+    differences.push(`count mismatch: old=${oldResponse.count}, new=${newResponse.count}`);
   }
-  // For multi-device response (GET /api/readings)
-  else {
-    if (oldResponse.count !== newResponse.count) {
-      differences.push(`count mismatch: old=${oldResponse.count}, new=${newResponse.count}`);
+  if (oldResponse.totCount !== newResponse.totCount) {
+    differences.push(`totCount mismatch: old=${oldResponse.totCount}, new=${newResponse.totCount}`);
+  }
+
+  const oldDevices = oldResponse.values || [];
+  const newDevices = newResponse.values || [];
+
+  if (oldDevices.length !== newDevices.length) {
+    differences.push(`Device array length mismatch: old=${oldDevices.length}, new=${newDevices.length}`);
+  }
+
+  for (let i = 0; i < Math.min(oldDevices.length, newDevices.length); i++) {
+    const oldDevice = oldDevices[i];
+    const newDevice = newDevices[i];
+
+    if (oldDevice.id !== newDevice.id) {
+      differences.push(`Device ${i}: id mismatch (old=${oldDevice.id}, new=${newDevice.id})`);
+      continue;
     }
-    if (oldResponse.totCount !== newResponse.totCount) {
-      differences.push(`totCount mismatch: old=${oldResponse.totCount}, new=${newResponse.totCount}`);
+
+    compareReadingValues(oldDevice.values, newDevice.values, oldDevice.id, differences, tolerance);
+  }
+
+  return {
+    matches: differences.length === 0,
+    differences: differences.length > 0 ? differences : undefined,
+  };
+}
+
+/**
+ * Compare responses from GET /api/devices/:id/readings (single device, multiple types)
+ */
+export function compareDeviceReadings(oldResponse: any, newResponse: any, tolerance: number = 0.001): ComparisonResult {
+  const differences: string[] = [];
+
+  if (oldResponse.id !== newResponse.id) {
+    differences.push(`id mismatch: old=${oldResponse.id}, new=${newResponse.id}`);
+  }
+
+  const oldValues = oldResponse.values || [];
+  const newValues = newResponse.values || [];
+
+  if (oldValues.length !== newValues.length) {
+    differences.push(`Values array length mismatch: old=${oldValues.length}, new=${newValues.length}`);
+  }
+
+  // Compare each type's readings
+  for (let i = 0; i < Math.min(oldValues.length, newValues.length); i++) {
+    const oldType = oldValues[i];
+    const newType = newValues[i];
+
+    if (oldType.type !== newType.type) {
+      differences.push(`Type ${i}: type mismatch (old=${oldType.type}, new=${newType.type})`);
+      continue;
     }
 
-    const oldDevices = oldResponse.values || [];
-    const newDevices = newResponse.values || [];
-
-    if (oldDevices.length !== newDevices.length) {
-      differences.push(`Device array length mismatch: old=${oldDevices.length}, new=${newDevices.length}`);
-    }
-
-    for (let i = 0; i < Math.min(oldDevices.length, newDevices.length); i++) {
-      const oldDevice = oldDevices[i];
-      const newDevice = newDevices[i];
-
-      if (oldDevice.id !== newDevice.id) {
-        differences.push(`Device ${i}: id mismatch (old=${oldDevice.id}, new=${newDevice.id})`);
-        continue;
-      }
-
-      compareReadingValues(oldDevice.values, newDevice.values, oldDevice.id, differences, tolerance);
-    }
+    compareReadingValues(oldType.values, newType.values, `${oldResponse.id}.${oldType.type}`, differences, tolerance);
   }
 
   return {

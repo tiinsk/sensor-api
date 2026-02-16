@@ -62,7 +62,39 @@ This document tracks behavioral differences discovered during compatibility test
 
 ## Aggregated Readings
 
-_(To be documented as tests are written)_
+### GET /api/readings
+
+**Route Difference:**
+- **Old API**: `/api/devices/readings`
+- **New API**: `/api/readings`
+
+**Timezone Handling:**
+- **Old API**: Hardcoded to `'Europe/Helsinki'` timezone using PostgreSQL's `date_trunc('day', created_at, 'Europe/Helsinki')`
+- **New API**: Accepts optional `timezone` query parameter (IANA timezone like `'Europe/Helsinki'`), defaults to `'UTC'`
+
+**Time Bucket Format:**
+- Both APIs return full ISO 8601 timestamps for time buckets (e.g., `"2026-02-08T22:00:00.000Z"`)
+- For Helsinki timezone, midnight Feb 9 local = `"2026-02-08T22:00:00.000Z"` in UTC (UTC+2)
+
+**Supported Levels:**
+- `30 minutes`: 30-minute intervals
+- `day`: Daily buckets at midnight in specified timezone
+- `week`: Weekly buckets starting Monday at midnight in specified timezone
+- `month`: Monthly buckets at 1st of month midnight in specified timezone
+- **Note**: Old api had `10 minutes` time level but returned incorrectly the same as `30 minutes`
+
+
+### GET /api/devices/:id/readings
+
+**Same as above** (timezone behavior, time bucket format, supported levels), but for a single device and supports multiple types via `types` parameter.
+
+**Types Parameter Format:**
+- **Old API**: Uses repeated query parameters: `types=temperature&types=humidity&types=pressure`
+- **New API**: Due to HTTP API v2.0, repeated parameters are automatically combined with commas:
+  - Repeated: `types=temperature&types=humidity` → backend receives `"temperature,humidity"`
+  - Comma-separated: `types=temperature,humidity` → backend receives `"temperature,humidity"`
+  - Single value: `types=temperature` → backend receives `"temperature"`
+  - All three formats are supported and produce the same result
 
 ---
 
