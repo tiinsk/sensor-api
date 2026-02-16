@@ -5,13 +5,10 @@
  */
 
 import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from '../utils/test-server';
-import { TEST_USER } from '../utils/test-data';
+import { getAuthHeaders, ApiAuthHeaders } from './auth-utils';
 import { compareDevices } from './comparison-utils';
 
 // Response type definitions
-interface LoginSuccessResponse {
-  token: string;
-}
 
 interface Device {
   id: string;
@@ -33,49 +30,25 @@ interface DeviceListResponse {
   values: Device[];
 }
 
-// Helper function to get auth tokens
-async function getAuthTokens() {
-  // Get old API token
-  const oldLoginRes = await fetch(`${OLD_API_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USER.username, password: TEST_USER.password }),
-  });
-  const oldToken = await oldLoginRes.text();
-
-  // Get new API token
-  const newLoginRes = await fetch(`${NEW_API_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USER.username, password: TEST_USER.password }),
-  });
-  const newData = await newLoginRes.json() as LoginSuccessResponse;
-  const newToken = newData.token;
-
-  return { oldToken, newToken };
-}
 
 describe('GET /api/devices - Compatibility', () => {
-  let oldToken: string;
-  let newToken: string;
+  let auth: ApiAuthHeaders;
 
   beforeAll(async () => {
     await verifyServersRunning();
-    const tokens = await getAuthTokens();
-    oldToken = tokens.oldToken;
-    newToken = tokens.newToken;
+    auth = await getAuthHeaders();
   });
 
   describe('Get All Devices (default parameters)', () => {
     it('should return identical device lists from both APIs', async () => {
       // Get devices from old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Get devices from new API
       const newResponse = await fetch(`${NEW_API_URL}/api/devices`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 200
@@ -101,12 +74,12 @@ describe('GET /api/devices - Compatibility', () => {
     it('should return all devices including disabled ones', async () => {
       // Get devices from old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices?includeDisabled=true`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Get devices from new API
       const newResponse = await fetch(`${NEW_API_URL}/api/devices?includeDisabled=true`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 200
@@ -133,12 +106,12 @@ describe('GET /api/devices - Compatibility', () => {
     it('should respect limit parameter', async () => {
       // Get devices with limit=1 from old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices?limit=1&includeDisabled=true`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Get devices with limit=1 from new API
       const newResponse = await fetch(`${NEW_API_URL}/api/devices?limit=1&includeDisabled=true`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 200
@@ -163,10 +136,10 @@ describe('GET /api/devices - Compatibility', () => {
     it('should respect offset parameter', async () => {
       // Get first device (offset=0)
       const oldFirst = await fetch(`${OLD_API_URL}/api/devices?limit=1&offset=0&includeDisabled=true`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
       const newFirst = await fetch(`${NEW_API_URL}/api/devices?limit=1&offset=0&includeDisabled=true`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       const oldFirstData = await oldFirst.json() as DeviceListResponse;
@@ -174,10 +147,10 @@ describe('GET /api/devices - Compatibility', () => {
 
       // Get second device (offset=1)
       const oldSecond = await fetch(`${OLD_API_URL}/api/devices?limit=1&offset=1&includeDisabled=true`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
       const newSecond = await fetch(`${NEW_API_URL}/api/devices?limit=1&offset=1&includeDisabled=true`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       const oldSecondData = await oldSecond.json() as DeviceListResponse;
@@ -197,10 +170,10 @@ describe('GET /api/devices - Compatibility', () => {
     it('should return devices in same order (sorted by order field)', async () => {
       // Get all devices
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices?includeDisabled=true`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
       const newResponse = await fetch(`${NEW_API_URL}/api/devices?includeDisabled=true`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       const oldData = await oldResponse.json() as DeviceListResponse;
@@ -222,14 +195,12 @@ describe('GET /api/devices - Compatibility', () => {
 });
 
 describe('GET /api/devices/:id - Compatibility', () => {
-  let oldToken: string;
-  let newToken: string;
+  let auth: ApiAuthHeaders;
 
   beforeAll(async () => {
     await verifyServersRunning();
-    const tokens = await getAuthTokens();
-    oldToken = tokens.oldToken;
-    newToken = tokens.newToken;
+    auth = await getAuthHeaders();
+
   });
 
   describe('Get Single Device', () => {
@@ -238,12 +209,12 @@ describe('GET /api/devices/:id - Compatibility', () => {
 
       // Get device from old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices/${deviceId}`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Get device from new API
       const newResponse = await fetch(`${NEW_API_URL}/api/devices/${deviceId}`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 200
@@ -268,12 +239,12 @@ describe('GET /api/devices/:id - Compatibility', () => {
 
       // Try old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices/${deviceId}`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Try new API
       const newResponse = await fetch(`${NEW_API_URL}/api/devices/${deviceId}`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 404
@@ -286,12 +257,12 @@ describe('GET /api/devices/:id - Compatibility', () => {
 
       // Try old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices/${deviceId}`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Try new API
       const newResponse = await fetch(`${NEW_API_URL}/api/devices/${deviceId}`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 404 (treating disabled as not found)

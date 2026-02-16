@@ -5,13 +5,11 @@
  */
 
 import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from '../utils/test-server';
-import { TEST_USER, getTestDateRanges } from '../utils/test-data';
+import { getTestDateRanges } from '../utils/test-data';
+import { getAuthHeaders, ApiAuthHeaders } from './auth-utils';
 import { compareStatistics, compareNumbers } from './comparison-utils';
 
 // Response type definitions
-interface LoginSuccessResponse {
-  token: string;
-}
 
 interface Statistics {
   temperature: {
@@ -43,36 +41,14 @@ interface StatisticsResponse {
   values: DeviceStatistics[];
 }
 
-// Helper function to get auth tokens
-async function getAuthTokens() {
-  const oldLoginRes = await fetch(`${OLD_API_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USER.username, password: TEST_USER.password }),
-  });
-  const oldToken = await oldLoginRes.text();
-
-  const newLoginRes = await fetch(`${NEW_API_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USER.username, password: TEST_USER.password }),
-  });
-  const newData = await newLoginRes.json() as LoginSuccessResponse;
-  const newToken = newData.token;
-
-  return { oldToken, newToken };
-}
 
 describe('GET /api/statistics - Compatibility', () => {
-  let oldToken: string;
-  let newToken: string;
+  let auth: ApiAuthHeaders;
   const dateRanges = getTestDateRanges();
 
   beforeAll(async () => {
     await verifyServersRunning();
-    const tokens = await getAuthTokens();
-    oldToken = tokens.oldToken;
-    newToken = tokens.newToken;
+    auth = await getAuthHeaders();
   });
 
   describe('Yesterday Statistics (Complete Day)', () => {
@@ -83,13 +59,13 @@ describe('GET /api/statistics - Compatibility', () => {
       // Get from old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Get from new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 200
@@ -116,13 +92,13 @@ describe('GET /api/statistics - Compatibility', () => {
       // Get from old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Get from new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 200
@@ -149,13 +125,13 @@ describe('GET /api/statistics - Compatibility', () => {
       // Get from old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Get from new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 200
@@ -182,13 +158,13 @@ describe('GET /api/statistics - Compatibility', () => {
       // Get from old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Get from new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 200
@@ -215,13 +191,13 @@ describe('GET /api/statistics - Compatibility', () => {
       // Get with limit=1 from old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/statistics?startTime=${startTime}&endTime=${endTime}&limit=1`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Get with limit=1 from new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/statistics?startTime=${startTime}&endTime=${endTime}&limit=1`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       const oldData = await oldResponse.json() as StatisticsResponse;
@@ -246,13 +222,13 @@ describe('GET /api/statistics - Compatibility', () => {
       // Try old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/statistics?endTime=${endTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Try new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/statistics?endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 400
@@ -266,13 +242,13 @@ describe('GET /api/statistics - Compatibility', () => {
       // Try old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/statistics?startTime=${startTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Try new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/statistics?startTime=${startTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 400
@@ -304,15 +280,12 @@ describe('GET /api/statistics - Compatibility', () => {
 });
 
 describe('GET /api/devices/:id/statistics - Compatibility', () => {
-  let oldToken: string;
-  let newToken: string;
+  let auth: ApiAuthHeaders;
   const dateRanges = getTestDateRanges();
 
   beforeAll(async () => {
     await verifyServersRunning();
-    const tokens = await getAuthTokens();
-    oldToken = tokens.oldToken;
-    newToken = tokens.newToken;
+    auth = await getAuthHeaders();
   });
 
   describe('Single Device Statistics', () => {
@@ -324,13 +297,13 @@ describe('GET /api/devices/:id/statistics - Compatibility', () => {
       // Get from old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/${deviceId}/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Get from new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/devices/${deviceId}/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 200
@@ -368,13 +341,13 @@ describe('GET /api/devices/:id/statistics - Compatibility', () => {
       // Get from old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/${deviceId}/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Get from new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/devices/${deviceId}/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 200
@@ -405,13 +378,13 @@ describe('GET /api/devices/:id/statistics - Compatibility', () => {
       // Try old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/${deviceId}/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Try new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/devices/${deviceId}/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 404
@@ -427,13 +400,13 @@ describe('GET /api/devices/:id/statistics - Compatibility', () => {
       // Try old API
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/${deviceId}/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': oldToken } }
+        { headers: auth.oldHeaders }
       );
 
       // Try new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/devices/${deviceId}/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       // Both should return 404 (treating disabled as not found)
@@ -451,7 +424,7 @@ describe('GET /api/devices/:id/statistics - Compatibility', () => {
       // Get from new API
       const newResponse = await fetch(
         `${NEW_API_URL}/api/devices/${deviceId}/statistics?startTime=${startTime}&endTime=${endTime}`,
-        { headers: { 'Authorization': `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       const newData = await newResponse.json() as DeviceStatistics;

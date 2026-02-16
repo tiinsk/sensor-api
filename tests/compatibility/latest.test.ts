@@ -5,13 +5,10 @@
  */
 
 import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from '../utils/test-server';
-import { TEST_USER } from '../utils/test-data';
-import {compareLatestReadings, compareNumbers} from './comparison-utils';
+import { getAuthHeaders, ApiAuthHeaders } from './auth-utils';
+import { compareLatestReadings, compareNumbers } from './comparison-utils';
 
 // Response type definitions
-interface LoginSuccessResponse {
-  token: string;
-}
 
 interface Reading {
   id?: string;
@@ -39,47 +36,25 @@ interface LatestReadingsResponse {
   values: LatestDevice[];
 }
 
-// Helper function to get auth tokens
-async function getAuthTokens() {
-  const oldLoginRes = await fetch(`${OLD_API_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USER.username, password: TEST_USER.password }),
-  });
-  const oldToken = await oldLoginRes.text();
-
-  const newLoginRes = await fetch(`${NEW_API_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USER.username, password: TEST_USER.password }),
-  });
-  const newData = await newLoginRes.json() as LoginSuccessResponse;
-  const newToken = newData.token;
-
-  return { oldToken, newToken };
-}
 
 describe('GET /api/latest - Compatibility', () => {
-  let oldToken: string;
-  let newToken: string;
+  let auth: ApiAuthHeaders;
 
   beforeAll(async () => {
     await verifyServersRunning();
-    const tokens = await getAuthTokens();
-    oldToken = tokens.oldToken;
-    newToken = tokens.newToken;
+    auth = await getAuthHeaders();
   });
 
   describe('Get All Latest Readings', () => {
     it('should return identical latest readings for all devices', async () => {
       // Get from old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices/latest-readings`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Get from new API
       const newResponse = await fetch(`${NEW_API_URL}/api/latest`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 200
@@ -111,12 +86,12 @@ describe('GET /api/latest - Compatibility', () => {
     it('should respect pagination with limit parameter', async () => {
       // Get with limit=1 from old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices/latest-readings?limit=1`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Get with limit=1 from new API
       const newResponse = await fetch(`${NEW_API_URL}/api/latest?limit=1`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       const oldData = await oldResponse.json() as LatestReadingsResponse;
@@ -136,10 +111,10 @@ describe('GET /api/latest - Compatibility', () => {
     it('should respect pagination with offset parameter', async () => {
       // Get first device (offset=0)
       const oldFirst = await fetch(`${OLD_API_URL}/api/devices/latest-readings?limit=1&offset=0`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
       const newFirst = await fetch(`${NEW_API_URL}/api/latest?limit=1&offset=0`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       const oldFirstData = await oldFirst.json() as LatestReadingsResponse;
@@ -147,10 +122,10 @@ describe('GET /api/latest - Compatibility', () => {
 
       // Get second device (offset=1)
       const oldSecond = await fetch(`${OLD_API_URL}/api/devices/latest-readings?limit=1&offset=1`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
       const newSecond = await fetch(`${NEW_API_URL}/api/latest?limit=1&offset=1`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       const oldSecondData = await oldSecond.json() as LatestReadingsResponse;
@@ -168,10 +143,10 @@ describe('GET /api/latest - Compatibility', () => {
     it('should order devices consistently', async () => {
       // Get all devices
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices/latest-readings`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
       const newResponse = await fetch(`${NEW_API_URL}/api/latest`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       const oldData = await oldResponse.json() as LatestReadingsResponse;
@@ -207,14 +182,11 @@ describe('GET /api/latest - Compatibility', () => {
 });
 
 describe('GET /api/devices/:id/latest - Compatibility', () => {
-  let oldToken: string;
-  let newToken: string;
+  let auth: ApiAuthHeaders;
 
   beforeAll(async () => {
     await verifyServersRunning();
-    const tokens = await getAuthTokens();
-    oldToken = tokens.oldToken;
-    newToken = tokens.newToken;
+    auth = await getAuthHeaders();
   });
 
   describe('Get Single Device Latest Reading', () => {
@@ -223,12 +195,12 @@ describe('GET /api/devices/:id/latest - Compatibility', () => {
 
       // Get from old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices/${deviceId}/latest-readings`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Get from new API
       const newResponse = await fetch(`${NEW_API_URL}/api/devices/${deviceId}/latest`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 200
@@ -260,12 +232,12 @@ describe('GET /api/devices/:id/latest - Compatibility', () => {
 
       // Try old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices/${deviceId}/latest-readings`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Try new API
       const newResponse = await fetch(`${NEW_API_URL}/api/devices/${deviceId}/latest`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 404
@@ -278,12 +250,12 @@ describe('GET /api/devices/:id/latest - Compatibility', () => {
 
       // Try old API
       const oldResponse = await fetch(`${OLD_API_URL}/api/devices/${deviceId}/latest-readings`, {
-        headers: { 'Authorization': oldToken },
+        headers: auth.oldHeaders,
       });
 
       // Try new API
       const newResponse = await fetch(`${NEW_API_URL}/api/devices/${deviceId}/latest`, {
-        headers: { 'Authorization': `Bearer ${newToken}` },
+        headers: auth.newHeaders,
       });
 
       // Both should return 404 (treating disabled as not found)

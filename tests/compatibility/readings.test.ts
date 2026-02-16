@@ -4,14 +4,11 @@
  */
 
 import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from '../utils/test-server';
-import {getTestDateRanges, TEST_USER} from '../utils/test-data';
+import { getTestDateRanges } from '../utils/test-data';
+import { getAuthHeaders, ApiAuthHeaders } from './auth-utils';
 import { compareAllReadings, compareDeviceReadings } from './comparison-utils';
 
 // Response type definitions
-interface LoginSuccessResponse {
-  token: string;
-}
-
 interface AggregatedReading {
   time: string;
   avg: number;
@@ -41,36 +38,14 @@ interface DeviceTypeReadingsResponse {
   values: TypeReadings[];
 }
 
-// Helper function to get auth tokens
-async function getAuthTokens() {
-  const oldLoginRes = await fetch(`${OLD_API_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USER.username, password: TEST_USER.password }),
-  });
-  const oldToken = await oldLoginRes.text();
-
-  const newLoginRes = await fetch(`${NEW_API_URL}/api/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: TEST_USER.username, password: TEST_USER.password }),
-  });
-  const newData = await newLoginRes.json() as LoginSuccessResponse;
-  const newToken = newData.token;
-
-  return { oldToken, newToken };
-}
 
 describe('GET /api/readings - Compatibility', () => {
-  let oldToken: string;
-  let newToken: string;
+  let auth: ApiAuthHeaders;
   const dateRanges = getTestDateRanges();
 
   beforeAll(async () => {
     await verifyServersRunning();
-    const tokens = await getAuthTokens();
-    oldToken = tokens.oldToken;
-    newToken = tokens.newToken;
+    auth = await getAuthHeaders();
   });
 
   // Test all combinations of timeframe/level for temperature
@@ -86,13 +61,13 @@ describe('GET /api/readings - Compatibility', () => {
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${encodeURIComponent(
           level
         )}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${encodeURIComponent(
           level
         )}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -116,11 +91,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -144,11 +119,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -172,11 +147,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -200,11 +175,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -228,11 +203,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -263,13 +238,13 @@ describe('GET /api/readings - Compatibility', () => {
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${encodeURIComponent(
           level
         )}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${encodeURIComponent(
           level
         )}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -293,11 +268,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -321,11 +296,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -356,13 +331,13 @@ describe('GET /api/readings - Compatibility', () => {
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${encodeURIComponent(
           level
         )}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${encodeURIComponent(
           level
         )}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -386,11 +361,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -414,11 +389,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=10&offset=0&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -446,11 +421,11 @@ describe('GET /api/readings - Compatibility', () => {
 
       const oldResponse = await fetch(
         `${OLD_API_URL}/api/devices/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=1&offset=1`,
-        { headers: { Authorization: oldToken } }
+        { headers: auth.oldHeaders }
       );
       const newResponse = await fetch(
         `${NEW_API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=${type}&level=${level}&limit=1&offset=1&timezone=Europe/Helsinki`,
-        { headers: { Authorization: `Bearer ${newToken}` } }
+        { headers: auth.newHeaders }
       );
 
       expect(oldResponse.status).toBe(200);
@@ -490,15 +465,12 @@ describe('GET /api/readings - Compatibility', () => {
 });
 
 describe('GET /api/devices/:id/readings - Compatibility', () => {
-  let oldToken: string;
-  let newToken: string;
+  let auth: ApiAuthHeaders;
   const dateRanges = getTestDateRanges();
 
   beforeAll(async () => {
     await verifyServersRunning();
-    const tokens = await getAuthTokens();
-    oldToken = tokens.oldToken;
-    newToken = tokens.newToken;
+    auth = await getAuthHeaders();
   });
 
   it('should return identical readings for a device with multiple types', async () => {
@@ -509,11 +481,11 @@ describe('GET /api/devices/:id/readings - Compatibility', () => {
 
     const oldResponse = await fetch(
       `${OLD_API_URL}/api/devices/${deviceId}/readings?startTime=${startTime}&endTime=${endTime}&types=temperature&types=humidity&types=pressure&level=${level}`,
-      { headers: { Authorization: oldToken } }
+      { headers: auth.oldHeaders }
     );
     const newResponse = await fetch(
       `${NEW_API_URL}/api/devices/${deviceId}/readings?startTime=${startTime}&endTime=${endTime}&types=temperature&types=humidity&types=pressure&level=${level}&timezone=Europe/Helsinki`,
-      { headers: { Authorization: `Bearer ${newToken}` } }
+      { headers: auth.newHeaders }
     );
 
     expect(oldResponse.status).toBe(200);
@@ -538,11 +510,11 @@ describe('GET /api/devices/:id/readings - Compatibility', () => {
 
     const oldResponse = await fetch(
       `${OLD_API_URL}/api/devices/${deviceId}/readings?startTime=${startTime}&endTime=${endTime}&types=temperature&level=${level}`,
-      { headers: { Authorization: oldToken } }
+      { headers: auth.oldHeaders }
     );
     const newResponse = await fetch(
       `${NEW_API_URL}/api/devices/${deviceId}/readings?startTime=${startTime}&endTime=${endTime}&types=temperature&level=${level}&timezone=Europe/Helsinki`,
-      { headers: { Authorization: `Bearer ${newToken}` } }
+      { headers: auth.newHeaders }
     );
 
     expect(oldResponse.status).toBe(404);
