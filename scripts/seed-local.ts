@@ -80,8 +80,8 @@ async function seedData() {
 
     // Yesterday (complete day with 10-minute intervals) - 144 readings
     const yesterday = new Date(FIXED_NOW);
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
+    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+    yesterday.setUTCHours(0, 0, 0, 0);
 
     for (let i = 0; i < 144; i++) {
       const timestamp = new Date(yesterday.getTime() + i * 10 * 60 * 1000);
@@ -97,8 +97,8 @@ async function seedData() {
 
     // Day before yesterday (10-minute intervals) - 144 readings
     const dayBeforeYesterday = new Date(FIXED_NOW);
-    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
-    dayBeforeYesterday.setHours(0, 0, 0, 0);
+    dayBeforeYesterday.setUTCDate(dayBeforeYesterday.getUTCDate() - 2);
+    dayBeforeYesterday.setUTCHours(0, 0, 0, 0);
 
     for (let i = 0; i < 144; i++) {
       const timestamp = new Date(dayBeforeYesterday.getTime() + i * 10 * 60 * 1000);
@@ -114,7 +114,7 @@ async function seedData() {
 
     // Current day (30-minute intervals from midnight to FIXED_NOW)
     const todayStart = new Date(FIXED_NOW);
-    todayStart.setHours(0, 0, 0, 0);
+    todayStart.setUTCHours(0, 0, 0, 0);
     const minutesSinceMidnight = (FIXED_NOW.getTime() - todayStart.getTime()) / (60 * 1000);
     const currentDayReadings = Math.floor(minutesSinceMidnight / 30);
 
@@ -134,8 +134,8 @@ async function seedData() {
     // Days -3, -4, -5, -6, -7 relative to FIXED_NOW
     for (let day = 3; day <= 7; day++) {
       const dayStart = new Date(FIXED_NOW);
-      dayStart.setDate(dayStart.getDate() - day);
-      dayStart.setHours(0, 0, 0, 0);
+      dayStart.setUTCDate(dayStart.getUTCDate() - day);
+      dayStart.setUTCHours(0, 0, 0, 0);
 
       for (let i = 0; i < 48; i++) {
         const timestamp = new Date(dayStart.getTime() + i * 30 * 60 * 1000);
@@ -178,8 +178,8 @@ async function seedData() {
       });
     }
 
-    // 2025 months (one reading per month) - 12 readings
-    for (let month = 0; month < 12; month++) {
+    // 2025 months (one reading per month, excluding December which has daily data) - 11 readings
+    for (let month = 0; month < 11; month++) { // Skip December (month 11) to avoid duplicates
       const timestamp = new Date(Date.UTC(2025, month, 15, 12, 0, 0));
       deviceReadings.push({
         deviceId,
