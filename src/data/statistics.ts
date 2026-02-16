@@ -1,7 +1,7 @@
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Reading } from '../types';
-import { getAllDevices } from './devices';
+import {getAllDevices, getDevice} from './devices';
 import { TABLES } from '../config/constants';
 
 const docClient = createDynamoDBClient();
@@ -157,6 +157,12 @@ export async function getDeviceStatistics(params: {
   deviceId: string;
 }) {
   const { startTime, endTime, deviceId } = params;
+
+  // Verify device exists
+  const device = await getDevice(params.deviceId);
+  if ('error' in device) {
+    return device;
+  }
 
   try {
     // Fetch all readings for this device in the time range

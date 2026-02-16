@@ -53,7 +53,10 @@ This document tracks behavioral differences discovered during compatibility test
 
 ## Statistics
 
-_(To be documented as tests are written)_
+### GET /api/statistics
+**Route mismatch**
+- Old API: Uses `/api/devices/statistics` route
+- New API: Uses `/api/statistics` route
 
 ---
 
