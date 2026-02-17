@@ -29,7 +29,7 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **implement-compatibility-add-reading-tests**: Write compatibility tests for POST /api/devices/:id/readings endpoint (compare old vs new API)
 - [x] **implement-compatibility-device-create-tests**: Write compatibility tests for POST /api/devices endpoint (compare old vs new API)
 - [x] **implement-compatibility-device-update-tests**: Write compatibility tests for PUT /api/devices/:id endpoint (compare old vs new API)
-- [ ] **implement-compatibility-device-delete-tests**: Write compatibility tests for DELETE /api/devices/:id endpoint (compare old vs new API)
+- [x] **implement-compatibility-device-delete-tests**: Write compatibility tests for DELETE /api/devices/:id endpoint (compare old vs new API)
 
 #### Integration Tests (new API only, against expected values)
 - [ ] **implement-integration-auth-tests**: Write integration tests for POST /api/login endpoint (new API only, against expected values)
