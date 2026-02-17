@@ -49,7 +49,7 @@ This starts:
 npm run tables:create
 ```
 
-### 5. Seed test data (optional)
+### 5. Seed data (optional)
 
 ```bash
 npm run seed:local
@@ -78,14 +78,21 @@ npm run create:user
 AWS SAM CLI allows you to test your Lambda function locally:
 
 ```bash
-# Start local API server (runs on http://localhost:3000)
+# For development (uses SensorApi-* tables)
 npm run sam:local
+
+# For testing (uses TEST-SensorApi-* tables)
+npm run sam:test
 ```
 
 This will:
 1. Generate `env.json` from your `.env.local` file
 2. Start a local API Gateway on port 3000
 3. Connect to your local DynamoDB (make sure it's running with `npm run dynamodb:start`)
+
+**Which to use?**
+- Use `sam:local` for manual testing and development
+- Use `sam:test` when running automated tests (sets `NODE_ENV=test`)
 
 **Test with curl:**
 ```bash
@@ -124,13 +131,40 @@ npm run dynamodb:stop
 | `npm run build` | Compile TypeScript |
 | `npm run dynamodb:start` | Start DynamoDB Local |
 | `npm run dynamodb:stop` | Stop DynamoDB Local |
-| `npm run tables:create` | Create tables locally |
-| `npm run seed:local` | Seed test data |
-| `npm run sam:local` | Run API locally with SAM CLI |
+| `npm run tables:create` | Create production tables locally |
+| `npm run seed:local` | Seed production tables with test data |
+| `npm run sam:local` | Run API locally (production tables) |
+| `npm run sam:test` | Run API locally (TEST- tables) |
 | `npm run sam:invoke` | Invoke Lambda with test event |
+| `npm run test:setup` | Create TEST- tables and seed data |
+| `npm run test:compatibility` | Run compatibility tests (old vs new API) |
+| `npm run test:integration` | Run integration tests (new API only) |
 | `npm run cdk:synth` | Generate CloudFormation |
 | `npm run cdk:deploy` | Deploy to AWS |
 | `npm run cdk:destroy` | Delete AWS resources |
+
+## Testing
+
+The project has two test suites:
+
+- **Integration tests**: Test new API in isolation
+- **Compatibility tests**: Compare old API vs new API responses
+
+**Quick start**:
+```bash
+# Setup (once)
+npm run dynamodb:start
+npm run test:setup
+
+# Run integration tests
+npm run sam:test          # Terminal 1
+npm run test:integration  # Terminal 2
+
+# Run compatibility tests (requires old API running)
+npm run test:compatibility
+```
+
+See `tests/README.md` for full details.
 
 ## Local Testing with SAM
 
@@ -186,6 +220,15 @@ For this project, both methods work. Use SAM when you want to test the full requ
 | **Readings** | Sensor readings | `device_id` | `timestamp` |
 | **Users** | User credentials | `username` | - |
 | **Auth** | API keys | `api_key` | - |
+
+### Development vs Test Tables
+
+The project maintains two sets of tables:
+
+- **Development tables** (`SensorApi-*`): For manual testing and development. Data persists between restarts.
+- **Test tables** (`TEST-SensorApi-*`): For automated tests. Can reset anytime with `npm run test:setup`.
+
+When `NODE_ENV=test`, the code automatically uses `TEST-` prefixed tables. This isolation prevents tests from interfering with your development data.
 
 ## Authentication
 

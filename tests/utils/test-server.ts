@@ -4,7 +4,7 @@
 
 // Server configuration - can be overridden via environment variables
 export const OLD_API_PORT = process.env.OLD_API_PORT;
-export const NEW_API_PORT = process.env.LOCAL_API_PORT;
+export const NEW_API_PORT = process.env.TEST_API_PORT;
 
 export const OLD_API_URL = `http://localhost:${OLD_API_PORT}`;
 export const NEW_API_URL = `http://localhost:${NEW_API_PORT}`;
