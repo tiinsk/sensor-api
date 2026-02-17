@@ -10,6 +10,8 @@ module.exports = {
     '!src/index.ts', // Exclude Lambda entry point
   ],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  // Run tests serially to avoid race conditions
+  maxWorkers: 1,
   transform: {
     '^.+\\.ts$': ['ts-jest', {
       tsconfig: {
