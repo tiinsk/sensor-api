@@ -78,7 +78,7 @@ api.post('/api/login', login);
 api.get('/api/devices', requireAuth, getAllDevicesHandler);
 api.get('/api/devices/:id', requireAuth, getDeviceHandler);
 api.post('/api/devices', requireAuth, addDeviceHandler);
-api.patch('/api/devices/:id', requireAuth, updateDeviceHandler);
+api.put('/api/devices/:id', requireAuth, updateDeviceHandler);
 api.delete('/api/devices/:id', requireAuth, deleteDeviceHandler);
 
 // Reading routes

@@ -28,16 +28,16 @@ const AddDeviceSchema = z.object({
 });
 
 const UpdateDeviceSchema = z.object({
-  order: z.number().optional(),
-  name: z.string().optional(),
-  type: z.enum(['ruuvi', 'sensorbug']).optional(),
+  order: z.number(),
+  name: z.string(),
+  type: z.enum(['ruuvi', 'sensorbug']),
   location: z.object({
     x: z.number(),
     y: z.number(),
     type: z.enum(['inside', 'outside']).nullable(),
-  }).optional(),
-  disabled: z.boolean().optional(),
-  sensorInfo: z.string().optional(),
+  }),
+  disabled: z.boolean(),
+  sensorInfo: z.string().optional(), // Optional field
 });
 
 /**
@@ -138,7 +138,7 @@ export async function addDeviceHandler(req: Request, res: Response) {
 }
 
 /**
- * PATCH /api/devices/:id
+ * PUT /api/devices/:id
  * Update an existing device
  */
 export async function updateDeviceHandler(req: Request, res: Response) {

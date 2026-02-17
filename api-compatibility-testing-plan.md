@@ -28,7 +28,7 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **implement-compatibility-readings-tests**: Write compatibility tests for GET /api/readings with all timeframe/level combinations for temperature, humidity, AND pressure (compare old vs new API)
 - [x] **implement-compatibility-add-reading-tests**: Write compatibility tests for POST /api/devices/:id/readings endpoint (compare old vs new API)
 - [x] **implement-compatibility-device-create-tests**: Write compatibility tests for POST /api/devices endpoint (compare old vs new API)
-- [ ] **implement-compatibility-device-update-tests**: Write compatibility tests for PATCH /api/devices/:id endpoint (compare old vs new API)
+- [x] **implement-compatibility-device-update-tests**: Write compatibility tests for PUT /api/devices/:id endpoint (compare old vs new API)
 - [ ] **implement-compatibility-device-delete-tests**: Write compatibility tests for DELETE /api/devices/:id endpoint (compare old vs new API)
 
 #### Integration Tests (new API only, against expected values)
@@ -39,7 +39,7 @@ This plan will create comprehensive integration tests to verify that both the **
 - [ ] **implement-integration-readings-tests**: Write integration tests for GET /api/readings with all timeframe/level combinations for temperature, humidity, AND pressure
 - [ ] **implement-integration-add-reading-tests**: Write integration tests for POST /api/devices/:id/readings endpoint
 - [ ] **implement-integration-device-create-tests**: Write integration tests for POST /api/devices endpoint
-- [ ] **implement-integration-device-update-tests**: Write integration tests for PATCH /api/devices/:id endpoint
+- [ ] **implement-integration-device-update-tests**: Write integration tests for PUT /api/devices/:id endpoint
 - [ ] **implement-integration-device-delete-tests**: Write integration tests for DELETE /api/devices/:id endpoint
 
 ### Phase 4: Validation & Documentation
@@ -226,7 +226,7 @@ These tests compare old API vs new API responses to ensure identical behavior du
   - Duplicate device ID returns conflict error
   - Invalid device data returns 400
   - Verify device appears in device list
-- `PATCH /api/devices/:id` updates existing device:
+- `PUT /api/devices/:id` updates existing device:
   - Update device name, order, location, type, disabled status
   - Duplicate order conflicts return error
   - Non-existent device returns 404
@@ -305,7 +305,7 @@ For each test:
   - Returns 400 for invalid data (missing fields, wrong ID length)
   - Returns 409 for duplicate device ID
   - Returns 409 for duplicate device order
-- `PATCH /api/devices/:id` - Update device:
+- `PUT /api/devices/:id` - Update device:
   - Successfully updates device name, order, location, type, disabled status
   - Returns 404 for non-existent device
   - Returns 409 for duplicate order
