@@ -2,7 +2,7 @@
  * Device data access layer
  */
 
-import { ScanCommand, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { ScanCommand, GetCommand, PutCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import type { Device, ArrayRequestParams } from '../types';
 import { NotFoundError, ConflictError } from '../lib/errors';
@@ -189,4 +189,52 @@ export async function updateDevice(
   );
 
   return updatedDevice;
+}
+
+/**
+ * Delete device and all its readings
+ */
+export async function deleteDevice(deviceId: string): Promise<void> {
+  // Check if device exists (will throw NotFoundError if not found)
+  await getDevice(deviceId, true);
+
+  // Delete all readings for this device
+  let lastEvaluatedKey: any = undefined;
+  do {
+    const queryResult = await docClient.send(
+      new QueryCommand({
+        TableName: TABLES.READINGS,
+        KeyConditionExpression: 'deviceId = :deviceId',
+        ExpressionAttributeValues: {
+          ':deviceId': deviceId,
+        },
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+
+    // Delete each reading
+    if (queryResult.Items) {
+      for (const item of queryResult.Items) {
+        await docClient.send(
+          new DeleteCommand({
+            TableName: TABLES.READINGS,
+            Key: {
+              deviceId: item.deviceId,
+              timestamp: item.timestamp,
+            },
+          })
+        );
+      }
+    }
+
+    lastEvaluatedKey = queryResult.LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  // Delete the device
+  await docClient.send(
+    new DeleteCommand({
+      TableName: TABLES.DEVICES,
+      Key: { id: deviceId },
+    })
+  );
 }

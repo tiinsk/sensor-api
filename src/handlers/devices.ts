@@ -4,7 +4,7 @@
 
 import { Request, Response } from 'lambda-api';
 import { z } from 'zod';
-import { getAllDevices, getDevice, addDevice, updateDevice } from '../data/devices';
+import { getAllDevices, getDevice, addDevice, updateDevice, deleteDevice } from '../data/devices';
 import { isHttpError } from '../lib/errors';
 
 const GetAllDevicesSchema = z.object({
@@ -65,6 +65,28 @@ export async function getAllDevicesHandler(req: Request, res: Response) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Invalid query parameters', details: error.errors });
     }
+    if (isHttpError(error)) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * DELETE /api/devices/:id
+ * Delete a device and all its readings
+ */
+export async function deleteDeviceHandler(req: Request, res: Response) {
+  try {
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: 'Device ID is required' });
+    }
+
+    await deleteDevice(id);
+    return res.status(200).json({ message: 'Device deleted successfully' });
+  } catch (error) {
+    console.error('Delete device error:', error);
     if (isHttpError(error)) {
       return res.status(error.statusCode).json({ error: error.message });
     }

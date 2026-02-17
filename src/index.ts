@@ -14,6 +14,7 @@ import {
   getDeviceHandler,
   addDeviceHandler,
   updateDeviceHandler,
+  deleteDeviceHandler,
 } from './handlers/devices';
 
 // Reading handlers
@@ -78,6 +79,7 @@ api.get('/api/devices', requireAuth, getAllDevicesHandler);
 api.get('/api/devices/:id', requireAuth, getDeviceHandler);
 api.post('/api/devices', requireAuth, addDeviceHandler);
 api.patch('/api/devices/:id', requireAuth, updateDeviceHandler);
+api.delete('/api/devices/:id', requireAuth, deleteDeviceHandler);
 
 // Reading routes
 api.get('/api/devices/:id/readings', requireAuth, getDeviceReadingsHandler);
