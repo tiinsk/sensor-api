@@ -35,7 +35,7 @@ function mapToDynamoItem(device: Device) {
   return {
     id: device.id,
     name: device.name,
-    Location: {
+    location: {
       x: device.location.x,
       y: device.location.y,
       type: device.location.type,
