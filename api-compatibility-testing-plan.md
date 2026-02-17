@@ -31,16 +31,42 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **implement-compatibility-device-update-tests**: Write compatibility tests for PUT /api/devices/:id endpoint (compare old vs new API)
 - [x] **implement-compatibility-device-delete-tests**: Write compatibility tests for DELETE /api/devices/:id endpoint (compare old vs new API)
 
-#### Integration Tests (new API only, against expected values)
-- [ ] **implement-integration-auth-tests**: Write integration tests for POST /api/login endpoint (new API only, against expected values)
-- [ ] **implement-integration-device-tests**: Write integration tests for GET /api/devices and GET /api/devices/:id endpoints
-- [ ] **implement-integration-latest-tests**: Write integration tests for GET /api/latest endpoint
-- [ ] **implement-integration-statistics-tests**: Write integration tests for GET /api/statistics endpoint
-- [ ] **implement-integration-readings-tests**: Write integration tests for GET /api/readings with all timeframe/level combinations for temperature, humidity, AND pressure
-- [ ] **implement-integration-add-reading-tests**: Write integration tests for POST /api/devices/:id/readings endpoint
-- [ ] **implement-integration-device-create-tests**: Write integration tests for POST /api/devices endpoint
-- [ ] **implement-integration-device-update-tests**: Write integration tests for PUT /api/devices/:id endpoint
-- [ ] **implement-integration-device-delete-tests**: Write integration tests for DELETE /api/devices/:id endpoint
+#### Integration Tests - Phase A: Core Functionality (mirrors compatibility tests)
+**Purpose:** Permanent tests for same scenarios as compatibility tests, but validate against expected values instead of comparing APIs
+
+- [x] **implement-integration-auth-tests**: POST /api/login with valid/invalid credentials, verify expected token format
+- [ ] **implement-integration-device-get-tests**: GET /api/devices and GET /api/devices/:id (verify against known seed data)
+- [ ] **implement-integration-device-create-tests**: POST /api/devices (valid device, invalid data, duplicate detection)
+- [ ] **implement-integration-device-update-tests**: PUT /api/devices/:id (full update, validation, conflicts)
+- [ ] **implement-integration-device-delete-tests**: DELETE /api/devices/:id (success, 404, CASCADE to readings)
+- [ ] **implement-integration-latest-tests**: GET /api/latest (verify latest readings for seeded devices)
+- [ ] **implement-integration-statistics-tests**: GET /api/statistics (verify stats for known date ranges)
+- [ ] **implement-integration-readings-tests**: GET /api/readings (all timeframe/level/type combinations against seed data)
+- [ ] **implement-integration-add-reading-tests**: POST /api/devices/:id/readings (add reading, verify appears in latest)
+
+#### Integration Tests - Phase B: Enhanced Coverage (critical correctness & edge cases)
+
+**Phase B1: Enhanced Correctness** (prevent data bugs - CRITICAL)
+- [ ] **test-aggregation-correctness**: Manually calculate expected avg/min/max for known dataset, verify API matches exactly
+- [ ] **test-timezone-bucketing**: Verify time buckets align correctly to Helsinki timezone (midnight = 22:00 UTC in winter)
+- [ ] **test-dst-transitions**: Test spring forward (March 30, 2026: 3AM→4AM) and fall back (October 26, 2026: 4AM→3AM) - verify missing/repeated hours handled correctly
+- [ ] **test-reading-propagation**: POST reading → verify appears in latest, statistics, and aggregated readings (end-to-end)
+- [ ] **test-device-isolation**: Verify device-001 readings don't affect device-002's statistics (data corruption check)
+- [ ] **test-latest-is-newest**: Add old reading then new reading → latest shows newest (not random)
+- [ ] **test-reading-count-accuracy**: Add N readings → verify count matches in all endpoints
+- [ ] **test-aggregation-completeness**: Verify all readings included in aggregation (none lost in bucketing)
+
+**Phase B2: Validation & Edge Cases** (prevent crashes & user errors - IMPORTANT)
+- [ ] **test-required-params**: Missing startTime/endTime/type/level → returns 400 with helpful message
+- [ ] **test-invalid-enums**: Invalid type/level/timezone values → returns 400
+- [ ] **test-time-range-validation**: startTime > endTime, invalid ISO dates → returns 400
+- [ ] **test-empty-results**: Query date range with no data → returns empty array (not error)
+- [ ] **test-null-sensor-values**: Readings with null temperature/humidity/pressure handled correctly
+- [ ] **test-device-no-readings**: Statistics/latest for device without readings → returns appropriate response
+- [ ] **test-pagination-boundaries**: offset > totalCount, limit=0 → handles gracefully
+- [ ] **test-sensor-value-extremes**: Very high/low temperatures, zero values, negative battery
+- [ ] **test-error-messages**: Validation errors are clear and specify which field failed
+- [ ] **test-rapid-readings**: Add multiple readings quickly (simulates Raspberry Pi behavior)
 
 ### Phase 4: Validation & Documentation
 - [ ] **document-api-differences**: Document all API behavioral differences discovered during testing (e.g., login response format, auth header format)
