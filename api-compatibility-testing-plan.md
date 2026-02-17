@@ -27,6 +27,9 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **implement-compatibility-statistics-tests**: Write compatibility tests for GET /api/statistics endpoint (compare old vs new API)
 - [x] **implement-compatibility-readings-tests**: Write compatibility tests for GET /api/readings with all timeframe/level combinations for temperature, humidity, AND pressure (compare old vs new API)
 - [x] **implement-compatibility-add-reading-tests**: Write compatibility tests for POST /api/devices/:id/readings endpoint (compare old vs new API)
+- [x] **implement-compatibility-device-create-tests**: Write compatibility tests for POST /api/devices endpoint (compare old vs new API)
+- [ ] **implement-compatibility-device-update-tests**: Write compatibility tests for PATCH /api/devices/:id endpoint (compare old vs new API)
+- [ ] **implement-compatibility-device-delete-tests**: Write compatibility tests for DELETE /api/devices/:id endpoint (compare old vs new API)
 
 #### Integration Tests (new API only, against expected values)
 - [ ] **implement-integration-auth-tests**: Write integration tests for POST /api/login endpoint (new API only, against expected values)
@@ -35,6 +38,9 @@ This plan will create comprehensive integration tests to verify that both the **
 - [ ] **implement-integration-statistics-tests**: Write integration tests for GET /api/statistics endpoint
 - [ ] **implement-integration-readings-tests**: Write integration tests for GET /api/readings with all timeframe/level combinations for temperature, humidity, AND pressure
 - [ ] **implement-integration-add-reading-tests**: Write integration tests for POST /api/devices/:id/readings endpoint
+- [ ] **implement-integration-device-create-tests**: Write integration tests for POST /api/devices endpoint
+- [ ] **implement-integration-device-update-tests**: Write integration tests for PATCH /api/devices/:id endpoint
+- [ ] **implement-integration-device-delete-tests**: Write integration tests for DELETE /api/devices/:id endpoint
 
 ### Phase 4: Validation & Documentation
 - [ ] **document-api-differences**: Document all API behavioral differences discovered during testing (e.g., login response format, auth header format)
@@ -215,6 +221,21 @@ These tests compare old API vs new API responses to ensure identical behavior du
   - `GET /api/devices?limit=1&offset=2` - Third page (disabled device, should not appear without includeDisabled)
   - Verify pagination works identically across all pages
 - `GET /api/devices/:id` returns single device
+- `POST /api/devices` creates new device:
+  - Valid device creation (12-char ID, all required fields)
+  - Duplicate device ID returns conflict error
+  - Invalid device data returns 400
+  - Verify device appears in device list
+- `PATCH /api/devices/:id` updates existing device:
+  - Update device name, order, location, type, disabled status
+  - Duplicate order conflicts return error
+  - Non-existent device returns 404
+  - Verify updates persist
+- `DELETE /api/devices/:id` deletes device and all readings:
+  - Delete existing device returns success
+  - Non-existent device returns 404
+  - Verify device no longer appears in list
+  - Verify all readings for device are deleted (CASCADE)
 - Response format matches exactly (id, name, location, type, order, disabled)
 
 **Latest Readings Tests:**
@@ -275,6 +296,25 @@ For each test:
 - Reading is successfully stored
 - `GET /api/latest` immediately reflects the new reading
 - Both APIs handle the same timestamp format
+- **Note:** Tests use temporary devices created per test and deleted after (via `DELETE /api/devices/:id`)
+
+**Device Management Tests (CRUD Operations):**
+
+- `POST /api/devices` - Create device:
+  - Successfully creates device with valid data (12-char ID required by old API)
+  - Returns 400 for invalid data (missing fields, wrong ID length)
+  - Returns 409 for duplicate device ID
+  - Returns 409 for duplicate device order
+- `PATCH /api/devices/:id` - Update device:
+  - Successfully updates device name, order, location, type, disabled status
+  - Returns 404 for non-existent device
+  - Returns 409 for duplicate order
+  - Validates all field constraints
+- `DELETE /api/devices/:id` - Delete device:
+  - Successfully deletes device and CASCADE deletes all readings
+  - Returns 404 for non-existent device
+  - Verifies device no longer appears in device list
+  - Verifies all device readings are deleted
 
 #### 3.3 Response Comparison Utilities
 

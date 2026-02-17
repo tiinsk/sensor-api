@@ -94,3 +94,11 @@ export async function deleteTestDevice(
     throw new Error(`Failed to delete device from new API: ${newResponse.status} - ${errorText}`);
   }
 }
+
+/**
+ * Generate a unique test device ID (exactly 12 characters for old API compatibility)
+ */
+export function generateTestDeviceId(): string {
+  // Format: test-NNNNNNN (12 chars: 'test-' = 5 chars + 7 digits)
+  return `test-${Date.now().toString().slice(-7)}`;
+}
