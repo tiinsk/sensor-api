@@ -96,6 +96,10 @@ This document tracks behavioral differences discovered during compatibility test
   - Single value: `types=temperature` → backend receives `"temperature"`
   - All three formats are supported and produce the same result
 
+### POST /api/devices/:id/readings
+- **Old API**: returns `200` when new reading has been created
+- **New API**: return `201` when new reading has been created
+
 ---
 
 ## Notes

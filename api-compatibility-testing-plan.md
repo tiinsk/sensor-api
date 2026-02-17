@@ -26,7 +26,7 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **implement-compatibility-latest-tests**: Write compatibility tests for GET /api/latest endpoint (compare old vs new API)
 - [x] **implement-compatibility-statistics-tests**: Write compatibility tests for GET /api/statistics endpoint (compare old vs new API)
 - [x] **implement-compatibility-readings-tests**: Write compatibility tests for GET /api/readings with all timeframe/level combinations for temperature, humidity, AND pressure (compare old vs new API)
-- [ ] **implement-compatibility-add-reading-tests**: Write compatibility tests for POST /api/devices/:id/readings endpoint (compare old vs new API)
+- [x] **implement-compatibility-add-reading-tests**: Write compatibility tests for POST /api/devices/:id/readings endpoint (compare old vs new API)
 
 #### Integration Tests (new API only, against expected values)
 - [ ] **implement-integration-auth-tests**: Write integration tests for POST /api/login endpoint (new API only, against expected values)
