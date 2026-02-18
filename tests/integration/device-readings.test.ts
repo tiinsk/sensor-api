@@ -1,0 +1,338 @@
+/**
+ * Integration tests for GET /api/devices/:id/readings
+ * Tests aggregated readings for a specific device
+ */
+
+import { getApiUrl } from './test-config';
+import { getAuthHeaders, RequestHeaders } from './auth-utils';
+import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
+import { getTestDateRanges } from '../utils/test-data';
+
+interface AggregatedReading {
+  time: string;
+  avg: number;
+  min: number;
+  max: number;
+}
+
+interface TypeReadings {
+  type: string;
+  values: AggregatedReading[];
+}
+
+interface DeviceReadingsResponse {
+  id: string;
+  values: TypeReadings[];
+}
+
+describe('GET /api/devices/:id/readings - Integration', () => {
+  const API_URL = getApiUrl();
+  let headers: RequestHeaders;
+  const createdDeviceIds: string[] = [];
+  const dateRanges = getTestDateRanges();
+
+  beforeAll(async () => {
+    headers = await getAuthHeaders();
+  });
+
+  afterEach(async () => {
+    await deleteTestDevices(createdDeviceIds, headers);
+    createdDeviceIds.length = 0;
+  });
+
+  describe('Multiple Sensor Types', () => {
+    it('should return readings for multiple sensor types', async () => {
+      const deviceId = generateTestDeviceId();
+
+      await fetch(`${API_URL}/api/devices`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          id: deviceId,
+          name: 'Multi-Type Test Device',
+          location: { x: 0, y: 0, type: null },
+          type: 'ruuvi',
+          disabled: false,
+          order: 9999,
+        }),
+      });
+
+      createdDeviceIds.push(deviceId);
+
+      const baseDate = dateRanges.dayBeforeYesterday.start;
+
+      // Add readings with all three sensor types
+      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          temperature: 20.0,
+          humidity: 50.0,
+          pressure: 1013.0,
+          timestamp: new Date(new Date(baseDate).setUTCHours(12, 0, 0, 0)).toISOString()
+        }),
+      });
+
+      // Query for all three types
+      const types = 'temperature,humidity,pressure';
+      const response = await fetch(
+        `${API_URL}/api/devices/${deviceId}/readings?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}&types=${types}&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+
+      const data = (await response.json()) as DeviceReadingsResponse;
+
+      expect(data.id).toBe(deviceId);
+      expect(data.values).toHaveLength(3); // 3 sensor types
+
+      // Find each sensor type
+      const tempReadings = data.values.find(v => v.type === 'temperature');
+      const humidityReadings = data.values.find(v => v.type === 'humidity');
+      const pressureReadings = data.values.find(v => v.type === 'pressure');
+
+      expect(tempReadings).toBeDefined();
+      expect(humidityReadings).toBeDefined();
+      expect(pressureReadings).toBeDefined();
+
+      // Verify values
+      expect(tempReadings!.values[0].avg).toBe(20);
+      expect(humidityReadings!.values[0].avg).toBe(50);
+      expect(pressureReadings!.values[0].avg).toBe(1013);
+    });
+
+    it('should correctly aggregate multiple readings per sensor type', async () => {
+      const deviceId = generateTestDeviceId();
+
+      await fetch(`${API_URL}/api/devices`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          id: deviceId,
+          name: 'Aggregation Test Device',
+          location: { x: 0, y: 0, type: null },
+          type: 'ruuvi',
+          disabled: false,
+          order: 9998,
+        }),
+      });
+
+      createdDeviceIds.push(deviceId);
+
+      const baseDate = dateRanges.dayBeforeYesterday.start;
+
+      // Add 3 readings with different values
+      const readings = [
+        { temp: 10, humidity: 40, time: 0 },
+        { temp: 20, humidity: 50, time: 10 },
+        { temp: 30, humidity: 60, time: 20 },
+      ];
+
+      for (const reading of readings) {
+        await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            temperature: reading.temp,
+            humidity: reading.humidity,
+            timestamp: new Date(new Date(baseDate).setUTCHours(12, reading.time, 0, 0)).toISOString()
+          }),
+        });
+      }
+
+      const types = 'temperature,humidity';
+      const response = await fetch(
+        `${API_URL}/api/devices/${deviceId}/readings?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}&types=${types}&level=${encodeURIComponent('30 minutes')}`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+
+      const data = (await response.json()) as DeviceReadingsResponse;
+
+      const tempReadings = data.values.find(v => v.type === 'temperature');
+      const humidityReadings = data.values.find(v => v.type === 'humidity');
+
+      // Temperature: (10 + 20 + 30) / 3 = 20
+      expect(tempReadings!.values[0].avg).toBe(20);
+      expect(tempReadings!.values[0].min).toBe(10);
+      expect(tempReadings!.values[0].max).toBe(30);
+
+      // Humidity: (40 + 50 + 60) / 3 = 50
+      expect(humidityReadings!.values[0].avg).toBe(50);
+      expect(humidityReadings!.values[0].min).toBe(40);
+      expect(humidityReadings!.values[0].max).toBe(60);
+    });
+  });
+
+  describe('Time Bucketing', () => {
+    it('should correctly bucket readings by day', async () => {
+      const deviceId = generateTestDeviceId();
+
+      await fetch(`${API_URL}/api/devices`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          id: deviceId,
+          name: 'Day Bucket Device',
+          location: { x: 0, y: 0, type: null },
+          type: 'ruuvi',
+          disabled: false,
+          order: 9997,
+        }),
+      });
+
+      createdDeviceIds.push(deviceId);
+
+      // Add readings on two different days
+      const day1 = dateRanges.dayBeforeYesterday.start;
+      const day2 = dateRanges.yesterday.start;
+
+      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          temperature: 15.0,
+          timestamp: new Date(new Date(day1).setUTCHours(12, 0, 0, 0)).toISOString()
+        }),
+      });
+
+      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          temperature: 25.0,
+          timestamp: new Date(new Date(day2).setUTCHours(12, 0, 0, 0)).toISOString()
+        }),
+      });
+
+      const startTime = dateRanges.dayBeforeYesterday.start.toISOString();
+      const endTime = dateRanges.yesterday.end.toISOString();
+
+      const response = await fetch(
+        `${API_URL}/api/devices/${deviceId}/readings?startTime=${startTime}&endTime=${endTime}&types=temperature&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+
+      const data = (await response.json()) as DeviceReadingsResponse;
+
+      const tempReadings = data.values.find(v => v.type === 'temperature');
+      expect(tempReadings).toBeDefined();
+      expect(tempReadings!.values).toHaveLength(2); // 2 day buckets
+
+      // Sort by time
+      const buckets = tempReadings!.values.sort((a, b) => a.time.localeCompare(b.time));
+
+      expect(buckets[0].avg).toBe(15);
+      expect(buckets[1].avg).toBe(25);
+    });
+  });
+
+  describe('Integration with Seed Data', () => {
+    it('should return readings for device-001 with yesterday data', async () => {
+      const deviceId = 'device-001';
+
+      const response = await fetch(
+        `${API_URL}/api/devices/${deviceId}/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature,humidity&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+
+      const data = (await response.json()) as DeviceReadingsResponse;
+
+      expect(data.id).toBe(deviceId);
+      expect(data.values.length).toBeGreaterThan(0);
+
+      // Verify structure
+      data.values.forEach((typeReadings) => {
+        expect(typeReadings).toHaveProperty('type');
+        expect(typeReadings).toHaveProperty('values');
+        
+        // Verify mathematical correctness
+        typeReadings.values.forEach((reading) => {
+          expect(reading.min).toBeLessThanOrEqual(reading.avg);
+          expect(reading.avg).toBeLessThanOrEqual(reading.max);
+        });
+      });
+    });
+  });
+
+  describe('Validation', () => {
+    it('should return 404 for non-existent device', async () => {
+      const response = await fetch(
+        `${API_URL}/api/devices/nonexistent/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return 404 for disabled device', async () => {
+      const response = await fetch(
+        `${API_URL}/api/devices/device-003/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return 400 for missing startTime', async () => {
+      const response = await fetch(
+        `${API_URL}/api/devices/device-001/readings?endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 for missing endTime', async () => {
+      const response = await fetch(
+        `${API_URL}/api/devices/device-001/readings?startTime=${dateRanges.yesterday.start.toISOString()}&types=temperature&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 for missing types', async () => {
+      const response = await fetch(
+        `${API_URL}/api/devices/device-001/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 for missing level', async () => {
+      const response = await fetch(
+        `${API_URL}/api/devices/device-001/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature`,
+        { headers }
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when startTime > endTime', async () => {
+      const response = await fetch(
+        `${API_URL}/api/devices/device-001/readings?startTime=2026-02-12T10:00:00.000Z&endTime=2026-02-09T00:00:00.000Z&types=temperature&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('Authentication', () => {
+    it('should return 401 without auth token', async () => {
+      const response = await fetch(
+        `${API_URL}/api/devices/device-001/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature&level=day`
+      );
+
+      expect(response.status).toBe(401);
+    });
+  });
+});
