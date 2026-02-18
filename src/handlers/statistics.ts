@@ -7,17 +7,41 @@ import { z } from 'zod';
 import { getAllStatistics, getDeviceStatistics } from '../data/statistics';
 import { isHttpError } from '../lib/errors';
 
-const GetAllStatisticsSchema = z.object({
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
-  limit: z.coerce.number().int().min(1).max(100).default(100),
-  offset: z.coerce.number().int().min(0).default(0),
-});
+const GetAllStatisticsSchema = z
+  .object({
+    startTime: z.string().datetime(),
+    endTime: z.string().datetime(),
+    limit: z.coerce.number().int().min(1).max(100).default(100),
+    offset: z.coerce.number().int().min(0).default(0),
+  })
+  .refine(
+    (data) => {
+      const start = new Date(data.startTime);
+      const end = new Date(data.endTime);
+      return start <= end;
+    },
+    {
+      message: 'startTime must be before or equal to endTime',
+      path: ['startTime'],
+    }
+  );
 
-const GetDeviceStatisticsSchema = z.object({
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
-});
+const GetDeviceStatisticsSchema = z
+  .object({
+    startTime: z.string().datetime(),
+    endTime: z.string().datetime(),
+  })
+  .refine(
+    (data) => {
+      const start = new Date(data.startTime);
+      const end = new Date(data.endTime);
+      return start <= end;
+    },
+    {
+      message: 'startTime must be before or equal to endTime',
+      path: ['startTime'],
+    }
+  );
 
 /**
  * GET /api/statistics

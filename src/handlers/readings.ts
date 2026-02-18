@@ -7,33 +7,71 @@ import { z } from 'zod';
 import { getDeviceReadings, getAllReadings, addDeviceReading } from '../data/readings';
 import { isHttpError } from '../lib/errors';
 
-const GetDeviceReadingsSchema = z.object({
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
-  types: z
-    .string()
-    .transform((str) => str.split(',').map((t) => t.trim()))
-    .pipe(z.array(z.enum(['temperature', 'humidity', 'pressure', 'battery']))),
-  level: z.enum(['30 minutes', 'day', 'week', 'month']),
-  timezone: z.string().optional(), // IANA timezone (e.g., 'Europe/Helsinki'), defaults to UTC
-});
+const GetDeviceReadingsSchema = z
+  .object({
+    startTime: z.string().datetime(),
+    endTime: z.string().datetime(),
+    types: z
+      .string()
+      .transform((str) => str.split(',').map((t) => t.trim()))
+      .pipe(z.array(z.enum(['temperature', 'humidity', 'pressure', 'battery']))),
+    level: z.enum(['30 minutes', 'day', 'week', 'month']),
+    timezone: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      const start = new Date(data.startTime);
+      const end = new Date(data.endTime);
+      return start <= end;
+    },
+    {
+      message: 'startTime must be before or equal to endTime',
+      path: ['startTime'],
+    }
+  );
 
-const GetAllReadingsSchema = z.object({
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
-  type: z.enum(['temperature', 'humidity', 'pressure', 'battery']),
-  level: z.enum(['30 minutes', 'day', 'week', 'month']),
-  limit: z.coerce.number().int().min(1).max(100).default(100),
-  offset: z.coerce.number().int().min(0).default(0),
-  timezone: z.string().optional(), // IANA timezone (e.g., 'Europe/Helsinki'), defaults to UTC
-});
+const GetAllReadingsSchema = z
+  .object({
+    startTime: z.string().datetime(),
+    endTime: z.string().datetime(),
+    type: z.enum(['temperature', 'humidity', 'pressure', 'battery']),
+    level: z.enum(['30 minutes', 'day', 'week', 'month']),
+    limit: z.coerce.number().int().min(1).max(100).default(100),
+    offset: z.coerce.number().int().min(0).default(0),
+    timezone: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      const start = new Date(data.startTime);
+      const end = new Date(data.endTime);
+      return start <= end;
+    },
+    {
+      message: 'startTime must be before or equal to endTime',
+      path: ['startTime'],
+    }
+  );
 
-const AddReadingSchema = z.object({
-  temperature: z.number().optional(),
-  humidity: z.number().optional(),
-  pressure: z.number().optional(),
-  battery: z.number().optional(),
-});
+const AddReadingSchema = z
+  .object({
+    temperature: z.number().optional(),
+    humidity: z.number().optional(),
+    pressure: z.number().optional(),
+    battery: z.number().optional(),
+    timestamp: z.string().datetime().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.timestamp) return true; // If no timestamp, it's valid
+      const providedTime = new Date(data.timestamp).getTime();
+      const now = Date.now();
+      return providedTime <= now;
+    },
+    {
+      message: 'Timestamp cannot be in the future',
+      path: ['timestamp'],
+    }
+  );
 
 /**
  * GET /api/devices/:id/readings

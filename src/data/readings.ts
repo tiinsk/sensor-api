@@ -144,6 +144,7 @@ export async function addDeviceReading(params: {
     pressure?: number;
     lux?: number;
     battery?: number;
+    timestamp?: string;
   };
 }) {
   // Verify device exists
@@ -152,7 +153,8 @@ export async function addDeviceReading(params: {
     return device;
   }
 
-  const timestamp = new Date().toISOString();
+  // Use provided timestamp or current time
+  const timestamp = params.payload.timestamp || new Date().toISOString();
 
   const reading: Reading = {
     deviceId: params.id,
