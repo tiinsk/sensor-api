@@ -7,10 +7,13 @@ import { RequestHeaders } from '../integration/auth-utils';
 
 /**
  * Generate a unique test device ID
- * Format: test-NNNNNNN (12 chars: 'test-' = 5 chars + 7 digits)
+ * Format: test-NNNNNNN (12 chars: 'test-' = 5 chars + 7 chars)
+ * Combines timestamp with random suffix to ensure uniqueness
  */
 export function generateTestDeviceId(): string {
-  return `test-${Date.now().toString().slice(-7)}`;
+  const timestamp = Date.now().toString(36).slice(-4);
+  const random = Math.random().toString(36).substring(2, 5);
+  return `test-${timestamp}${random}`;
 }
 
 /**
