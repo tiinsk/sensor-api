@@ -42,7 +42,7 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **implement-integration-latest-tests**: GET /api/latest (verify latest readings for seeded devices)
 - [x] **implement-integration-statistics-tests**: GET /api/statistics (verify stats for known date ranges)
 - [ ] **implement-integration-readings-tests**: GET /api/readings (all timeframe/level/type combinations against seed data)
-- [ ] **implement-integration-add-reading-tests**: POST /api/devices/:id/readings (add reading, verify appears in latest)
+- [x] **implement-integration-add-reading-tests**: POST /api/devices/:id/readings (add reading, verify appears in latest)
 
 #### Integration Tests - Phase B: Enhanced Coverage (critical correctness & edge cases)
 
