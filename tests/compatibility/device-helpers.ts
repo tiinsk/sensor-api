@@ -1,9 +1,12 @@
 /**
- * Helper functions for managing test devices
+ * Helper functions for managing test devices in compatibility tests
  */
 
 import { OLD_API_URL, NEW_API_URL } from '../utils/test-server';
-import {ApiAuthHeaders} from "./auth-utils";
+import { ApiAuthHeaders } from './auth-utils';
+import { generateTestDeviceId } from '../utils/device-helpers';
+
+export { generateTestDeviceId };
 
 export interface TestDevice {
   id: string;
@@ -95,10 +98,3 @@ export async function deleteTestDevice(
   }
 }
 
-/**
- * Generate a unique test device ID (exactly 12 characters for old API compatibility)
- */
-export function generateTestDeviceId(): string {
-  // Format: test-NNNNNNN (12 chars: 'test-' = 5 chars + 7 digits)
-  return `test-${Date.now().toString().slice(-7)}`;
-}

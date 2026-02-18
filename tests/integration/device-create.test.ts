@@ -5,6 +5,7 @@
 
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
+import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
 import {NEW_API_URL} from "../utils/test-server";
 
 interface Device {
@@ -20,16 +21,11 @@ interface Device {
   type: 'ruuvi' | 'sensorbug';
 }
 
-function generateTestDeviceId(): string {
-  const timestamp = Date.now().toString(36).slice(-4);
-  const random = Math.random().toString(36).substring(2, 5);
-  return `test-${timestamp}${random}`;
-}
-
 describe('POST /api/devices - Integration', () => {
   const API_URL = getApiUrl();
   let headers: RequestHeaders;
   let testDeviceId: string;
+  const createdDeviceIds: string[] = [];
 
   beforeAll(async () => {
     headers = await getAuthHeaders();
@@ -40,15 +36,9 @@ describe('POST /api/devices - Integration', () => {
   });
 
   afterEach(async () => {
-    // Cleanup: delete test device
-    try {
-      await fetch(`${API_URL}/api/devices/${testDeviceId}`, {
-        method: 'DELETE',
-        headers,
-      });
-    } catch (error) {
-      // Ignore errors during cleanup
-    }
+    // Clean up any devices created during tests
+    await deleteTestDevices(createdDeviceIds, headers);
+    createdDeviceIds.length = 0;
   });
 
   describe('Valid device creation', () => {
@@ -78,6 +68,8 @@ describe('POST /api/devices - Integration', () => {
       expect(data.type).toBe('ruuvi');
       expect(data.disabled).toBe(false);
       expect(data.order).toBe(100);
+
+      createdDeviceIds.push(testDeviceId);
     });
 
     it('should create device with location type "outside"', async () => {
@@ -101,6 +93,8 @@ describe('POST /api/devices - Integration', () => {
       const data = (await response.json()) as Device;
 
       expect(data.location.type).toBe('outside');
+
+      createdDeviceIds.push(testDeviceId);
     });
 
     it('should create device with location type null', async () => {
@@ -124,6 +118,8 @@ describe('POST /api/devices - Integration', () => {
       const data = (await response.json()) as Device;
 
       expect(data.location.type).toBeNull();
+
+      createdDeviceIds.push(testDeviceId);
     });
 
     it('should create device with type "sensorbug"', async () => {
@@ -147,6 +143,8 @@ describe('POST /api/devices - Integration', () => {
       const data = (await response.json()) as Device;
 
       expect(data.type).toBe('sensorbug');
+
+      createdDeviceIds.push(testDeviceId);
     });
 
     it('should create device with disabled=true', async () => {
@@ -170,6 +168,8 @@ describe('POST /api/devices - Integration', () => {
       const data = (await response.json()) as Device;
 
       expect(data.disabled).toBe(true);
+
+      createdDeviceIds.push(testDeviceId);
     });
   });
 
@@ -402,6 +402,8 @@ describe('POST /api/devices - Integration', () => {
 
       expect(createResponse.status).toBe(201);
 
+      createdDeviceIds.push(testDeviceId);
+
       // Retrieve device
       const getResponse = await fetch(`${API_URL}/api/devices/${testDeviceId}`, {
         headers,
@@ -431,6 +433,8 @@ describe('POST /api/devices - Integration', () => {
         headers,
         body: JSON.stringify(newDevice),
       });
+
+      createdDeviceIds.push(testDeviceId);
 
       // Get device list
       const listResponse = await fetch(`${API_URL}/api/devices`, {
