@@ -39,7 +39,7 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **implement-integration-device-create-tests**: POST /api/devices (valid device, invalid data, duplicate detection)
 - [x] **implement-integration-device-update-tests**: PUT /api/devices/:id (full update, validation, conflicts)
 - [x] **implement-integration-device-delete-tests**: DELETE /api/devices/:id (success, 404, CASCADE to readings)
-- [ ] **implement-integration-latest-tests**: GET /api/latest (verify latest readings for seeded devices)
+- [x] **implement-integration-latest-tests**: GET /api/latest (verify latest readings for seeded devices)
 - [ ] **implement-integration-statistics-tests**: GET /api/statistics (verify stats for known date ranges)
 - [ ] **implement-integration-readings-tests**: GET /api/readings (all timeframe/level/type combinations against seed data)
 - [ ] **implement-integration-add-reading-tests**: POST /api/devices/:id/readings (add reading, verify appears in latest)
