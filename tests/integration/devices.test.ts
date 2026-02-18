@@ -4,7 +4,7 @@
  */
 
 import { getApiUrl } from './test-config';
-import { getAuthHeaders, AuthHeaders } from './auth-utils';
+import { getAuthHeaders, RequestHeaders } from './auth-utils';
 
 interface Device {
   id: string;
@@ -28,16 +28,16 @@ interface DeviceListResponse {
 
 describe('GET /api/devices - Integration', () => {
   const API_URL = getApiUrl();
-  let authHeaders: AuthHeaders;
+  let headers: RequestHeaders;
 
   beforeAll(async () => {
-    authHeaders = await getAuthHeaders();
+    headers = await getAuthHeaders();
   });
 
   describe('GET /api/devices', () => {
     it('should return all enabled devices by default', async () => {
       const response = await fetch(`${API_URL}/api/devices`, {
-        headers: authHeaders,
+        headers,
       });
 
       expect(response.status).toBe(200);
@@ -58,7 +58,7 @@ describe('GET /api/devices - Integration', () => {
 
     it('should return all devices when includeDisabled=true', async () => {
       const response = await fetch(`${API_URL}/api/devices?includeDisabled=true`, {
-        headers: authHeaders,
+        headers,
       });
 
       expect(response.status).toBe(200);
@@ -78,7 +78,7 @@ describe('GET /api/devices - Integration', () => {
 
     it('should support pagination with limit', async () => {
       const response = await fetch(`${API_URL}/api/devices?limit=1`, {
-        headers: authHeaders,
+        headers,
       });
 
       expect(response.status).toBe(200);
@@ -94,7 +94,7 @@ describe('GET /api/devices - Integration', () => {
 
     it('should support pagination with offset', async () => {
       const response = await fetch(`${API_URL}/api/devices?limit=10&offset=1`, {
-        headers: authHeaders,
+        headers,
       });
 
       expect(response.status).toBe(200);
@@ -119,7 +119,7 @@ describe('GET /api/devices - Integration', () => {
 
     it('should verify device properties match seed data', async () => {
       const response = await fetch(`${API_URL}/api/devices`, {
-        headers: authHeaders,
+        headers,
       });
 
       const data = (await response.json()) as DeviceListResponse;
@@ -159,7 +159,7 @@ describe('GET /api/devices - Integration', () => {
   describe('GET /api/devices/:id', () => {
     it('should return specific device by id', async () => {
       const response = await fetch(`${API_URL}/api/devices/device-001`, {
-        headers: authHeaders,
+        headers,
       });
 
       expect(response.status).toBe(200);
@@ -180,7 +180,7 @@ describe('GET /api/devices - Integration', () => {
 
     it('should return 404 for non-existent device', async () => {
       const response = await fetch(`${API_URL}/api/devices/nonexistent`, {
-        headers: authHeaders,
+        headers,
       });
 
       expect(response.status).toBe(404);
@@ -191,7 +191,7 @@ describe('GET /api/devices - Integration', () => {
 
     it('should return 404 for disabled device by default', async () => {
       const response = await fetch(`${API_URL}/api/devices/device-003`, {
-        headers: authHeaders,
+        headers,
       });
 
       expect(response.status).toBe(404);

@@ -8,14 +8,13 @@ interface LoginResponse {
   token: string;
 }
 
-export type AuthHeaders = {
-  Authorization: string
-};
+export type RequestHeaders = Record<string, string>;
 
 /**
  * Get authentication headers for integration tests
+ * Includes both Authorization and Content-Type headers
  */
-export async function getAuthHeaders(): Promise<AuthHeaders> {
+export async function getAuthHeaders(): Promise<RequestHeaders> {
   const API_URL = getApiUrl();
 
   const loginResponse = await fetch(`${API_URL}/api/login`, {
@@ -32,7 +31,10 @@ export async function getAuthHeaders(): Promise<AuthHeaders> {
   }
 
   const loginData = (await loginResponse.json()) as LoginResponse;
+
   return {
     Authorization: `Bearer ${loginData.token}`,
+    'Content-Type': 'application/json',
   };
 }
+
