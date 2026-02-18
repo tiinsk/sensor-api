@@ -35,7 +35,7 @@ This plan will create comprehensive integration tests to verify that both the **
 **Purpose:** Permanent tests for same scenarios as compatibility tests, but validate against expected values instead of comparing APIs
 
 - [x] **implement-integration-auth-tests**: POST /api/login with valid/invalid credentials, verify expected token format
-- [ ] **implement-integration-device-get-tests**: GET /api/devices and GET /api/devices/:id (verify against known seed data)
+- [x] **implement-integration-device-get-tests**: GET /api/devices and GET /api/devices/:id (verify against known seed data)
 - [ ] **implement-integration-device-create-tests**: POST /api/devices (valid device, invalid data, duplicate detection)
 - [ ] **implement-integration-device-update-tests**: PUT /api/devices/:id (full update, validation, conflicts)
 - [ ] **implement-integration-device-delete-tests**: DELETE /api/devices/:id (success, 404, CASCADE to readings)
