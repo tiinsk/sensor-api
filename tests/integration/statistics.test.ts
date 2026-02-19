@@ -414,4 +414,67 @@ describe('GET /api/statistics - Integration', () => {
       expect(deviceStats!.statistics.pressure.avg).toBeNull();
     });
   });
+
+  describe('Device with zero readings in queried range', () => {
+    it('GET /api/statistics returns null stats for device with no readings in range — not error or NaN', async () => {
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9966,
+        deviceName: 'No Readings Device',
+        readings: [], // device exists but has no readings
+        headers,
+        createdDeviceIds,
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/statistics?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+
+      const data = (await response.json()) as StatisticsResponse;
+      const deviceStats = data.values.find((s) => s.id === deviceId);
+      expect(deviceStats).toBeDefined();
+
+      expect(deviceStats!.statistics.temperature.avg).toBeNull();
+      expect(deviceStats!.statistics.temperature.min).toBeNull();
+      expect(deviceStats!.statistics.temperature.max).toBeNull();
+      expect(deviceStats!.statistics.humidity.avg).toBeNull();
+      expect(deviceStats!.statistics.humidity.min).toBeNull();
+      expect(deviceStats!.statistics.humidity.max).toBeNull();
+      expect(deviceStats!.statistics.pressure.avg).toBeNull();
+      expect(deviceStats!.statistics.pressure.min).toBeNull();
+      expect(deviceStats!.statistics.pressure.max).toBeNull();
+    });
+
+    it('GET /api/devices/:id/statistics returns 200 with null stats when device has no readings in range', async () => {
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9965,
+        deviceName: 'No Readings Device Single',
+        readings: [],
+        headers,
+        createdDeviceIds,
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/devices/${deviceId}/statistics?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}`,
+        { headers }
+      );
+
+
+      expect(response.status).toBe(200);
+
+      const deviceStats = (await response.json()) as SingleDeviceStatistics;
+      expect(deviceStats.id).toBe(deviceId);
+      expect(deviceStats.statistics.temperature.avg).toBeNull();
+      expect(deviceStats.statistics.temperature.min).toBeNull();
+      expect(deviceStats.statistics.temperature.max).toBeNull();
+      expect(deviceStats.statistics.humidity.avg).toBeNull();
+      expect(deviceStats.statistics.humidity.min).toBeNull();
+      expect(deviceStats.statistics.humidity.max).toBeNull();
+      expect(deviceStats.statistics.pressure.avg).toBeNull();
+      expect(deviceStats.statistics.pressure.min).toBeNull();
+      expect(deviceStats.statistics.pressure.max).toBeNull();
+    });
+  });
 });
