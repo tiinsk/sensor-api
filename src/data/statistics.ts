@@ -42,9 +42,9 @@ function calculateStatistics(readings: Reading[]): Statistics {
   }
 
   // Filter out readings with null values for each metric
-  const temps = readings.filter(r => r.temperature !== null).map(r => r.temperature!);
-  const humids = readings.filter(r => r.humidity !== null).map(r => r.humidity!);
-  const pressures = readings.filter(r => r.pressure !== null).map(r => r.pressure!);
+  const temps = readings.filter(r => r.temperature !== null && r.temperature !== undefined).map(r => r.temperature!);
+  const humids = readings.filter(r => r.humidity !== null && r.humidity !== undefined).map(r => r.humidity!);
+  const pressures = readings.filter(r => r.pressure !== null && r.pressure !== undefined).map(r => r.pressure!);
 
   const calcStats = (values: number[]) => {
     if (values.length === 0) return { avg: null, min: null, max: null };

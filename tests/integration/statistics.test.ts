@@ -5,7 +5,7 @@
 
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
-import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
+import { deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
 
 interface Statistics {
@@ -57,52 +57,16 @@ describe('GET /api/statistics - Integration', () => {
 
   describe('Calculation Correctness', () => {
     it('should calculate exact statistics for 3 readings', async () => {
-      const deviceId = generateTestDeviceId();
-
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9990,
+        deviceName: 'Calculation Test Device',
+        readings: [
+          { temperature: 10.0, humidity: 30.0, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(12, 0, 0, 0)).toISOString() },
+          { temperature: 20.0, humidity: 50.0, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(12, 10, 0, 0)).toISOString() },
+          { temperature: 30.0, humidity: 70.0, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(12, 20, 0, 0)).toISOString() },
+        ],
         headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: 'Calculation Test Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9990,
-        }),
-      });
-
-      createdDeviceIds.push(deviceId);
-
-      // Add exactly 3 readings with known values at specific times
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 10.0,
-          humidity: 30.0,
-          timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(12, 0, 0, 0)).toISOString()
-        }),
-      });
-
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 20.0,
-          humidity: 50.0,
-          timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(12, 10, 0, 0)).toISOString()
-        }),
-      });
-
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 30.0,
-          humidity: 70.0,
-          timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(12, 20, 0, 0)).toISOString()
-        }),
+        createdDeviceIds,
       });
 
       const response = await fetch(
@@ -127,31 +91,14 @@ describe('GET /api/statistics - Integration', () => {
     });
 
     it('should calculate statistics for 1 reading (min=avg=max)', async () => {
-      const deviceId = generateTestDeviceId();
-
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9989,
+        deviceName: 'Single Reading Device',
+        readings: [
+          { temperature: 25.5, humidity: 45.5, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(14, 0, 0, 0)).toISOString() },
+        ],
         headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: 'Single Reading Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9989,
-        }),
-      });
-
-      createdDeviceIds.push(deviceId);
-
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 25.5,
-          humidity: 45.5,
-          timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(14, 0, 0, 0)).toISOString()
-        }),
+        createdDeviceIds,
       });
 
       const response = await fetch(
@@ -169,39 +116,17 @@ describe('GET /api/statistics - Integration', () => {
     });
 
     it('should handle negative temperatures correctly', async () => {
-      const deviceId = generateTestDeviceId();
-
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9987,
+        deviceName: 'Negative Temp Device',
+        readings: [
+          { temperature: -10, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(16, 0, 0, 0)).toISOString() },
+          { temperature: 0, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(16, 10, 0, 0)).toISOString() },
+          { temperature: 10, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(16, 20, 0, 0)).toISOString() },
+        ],
         headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: 'Negative Temp Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9987,
-        }),
+        createdDeviceIds,
       });
-
-      createdDeviceIds.push(deviceId);
-
-      const readings = [
-        { temp: -10, time: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(16, 0, 0, 0)).toISOString() },
-        { temp: 0, time: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(16, 10, 0, 0)).toISOString() },
-        { temp: 10, time: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(16, 20, 0, 0)).toISOString() },
-      ];
-
-      for (const reading of readings) {
-        await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            temperature: reading.temp,
-            timestamp: reading.time
-          }),
-        });
-      }
 
       const response = await fetch(
         `${API_URL}/api/statistics?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}`,
@@ -220,56 +145,24 @@ describe('GET /api/statistics - Integration', () => {
 
   describe('Device Isolation', () => {
     it('should calculate Device-1 stats independent of Device-2', async () => {
-      const device1Id = generateTestDeviceId();
-      const device2Id = generateTestDeviceId();
-
-      // Create two devices
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
+      const device1Id = await createTestDeviceWithReadings({
+        deviceOrder: 9985,
+        deviceName: 'Device 1',
+        readings: [
+          { temperature: 10.0, humidity: 30.0, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(18, 0, 0, 0)).toISOString() },
+        ],
         headers,
-        body: JSON.stringify({
-          id: device1Id,
-          name: 'Device 1',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9985,
-        }),
+        createdDeviceIds,
       });
 
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
+      const device2Id = await createTestDeviceWithReadings({
+        deviceOrder: 9984,
+        deviceName: 'Device 2',
+        readings: [
+          { temperature: 30.0, humidity: 70.0, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(18, 10, 0, 0)).toISOString() },
+        ],
         headers,
-        body: JSON.stringify({
-          id: device2Id,
-          name: 'Device 2',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9984,
-        }),
-      });
-
-      createdDeviceIds.push(device1Id, device2Id);
-
-      await fetch(`${API_URL}/api/devices/${device1Id}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 10.0,
-          humidity: 30.0,
-          timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(18, 0, 0, 0)).toISOString()
-        }),
-      });
-
-      await fetch(`${API_URL}/api/devices/${device2Id}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 30.0,
-          humidity: 70.0,
-          timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(18, 10, 0, 0)).toISOString()
-        }),
+        createdDeviceIds,
       });
 
       const response = await fetch(
@@ -323,32 +216,14 @@ describe('GET /api/statistics - Integration', () => {
 
   describe('GET /api/devices/:id/statistics', () => {
     it('should return same statistics for yesterday reading in both yesterday and month queries', async () => {
-      const deviceId = generateTestDeviceId();
-
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9983,
+        deviceName: 'Time Range Test Device',
+        readings: [
+          { temperature: 18.5, humidity: 65.0, timestamp: new Date(new Date(dateRanges.yesterday.start).setUTCHours(12, 0, 0, 0)).toISOString() },
+        ],
         headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: 'Time Range Test Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9983,
-        }),
-      });
-
-      createdDeviceIds.push(deviceId);
-
-      // Add a single reading yesterday at noon
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 18.5,
-          humidity: 65.0,
-          timestamp: new Date(new Date(dateRanges.yesterday.start).setUTCHours(12, 0, 0, 0)).toISOString()
-        }),
+        createdDeviceIds,
       });
 
       // Query for yesterday only
@@ -463,6 +338,80 @@ describe('GET /api/statistics - Integration', () => {
       );
 
       expect(response.status).toBe(401);
+    });
+  });
+
+  describe('Partial Sensor Data (null values)', () => {
+    it('reading with temperature only returns null for humidity and pressure stats — not NaN', async () => {
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9970,
+        deviceName: 'Partial Data Device',
+        readings: [
+          { temperature: 21.0, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(10, 0, 0, 0)).toISOString() },
+        ],
+        headers,
+        createdDeviceIds,
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/statistics?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+
+      const data = (await response.json()) as StatisticsResponse;
+      const deviceStats = data.values.find((s) => s.id === deviceId);
+      expect(deviceStats).toBeDefined();
+
+      // Temperature should have real values
+      expect(deviceStats!.statistics.temperature.avg).toBe(21.0);
+      expect(deviceStats!.statistics.temperature.min).toBe(21.0);
+      expect(deviceStats!.statistics.temperature.max).toBe(21.0);
+
+      // Humidity and pressure must be null, not NaN or 0
+      expect(deviceStats!.statistics.humidity.avg).toBeNull();
+      expect(deviceStats!.statistics.humidity.min).toBeNull();
+      expect(deviceStats!.statistics.humidity.max).toBeNull();
+      expect(deviceStats!.statistics.pressure.avg).toBeNull();
+      expect(deviceStats!.statistics.pressure.min).toBeNull();
+      expect(deviceStats!.statistics.pressure.max).toBeNull();
+    });
+
+    it('average is computed only from readings that have the field — readings without it are excluded', async () => {
+      const base = dateRanges.dayBeforeYesterday.start;
+
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9969,
+        deviceName: 'Mixed Data Device',
+        readings: [
+          { temperature: 10.0, timestamp: new Date(new Date(base).setUTCHours(11, 0, 0, 0)).toISOString() },
+          { temperature: 20.0, humidity: 50.0, timestamp: new Date(new Date(base).setUTCHours(11, 10, 0, 0)).toISOString() },
+        ],
+        headers,
+        createdDeviceIds,
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/devices/${deviceId}/statistics?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}`,
+        { headers }
+      );
+
+      const deviceStats = (await response.json()) as SingleDeviceStatistics;
+      expect(deviceStats).toBeDefined();
+
+      // Temperature avg uses both readings: (10 + 20) / 2 = 15
+      expect(deviceStats!.statistics.temperature.avg).toBe(15);
+      expect(deviceStats!.statistics.temperature.min).toBe(10);
+      expect(deviceStats!.statistics.temperature.max).toBe(20);
+
+      // Humidity avg uses only reading B (reading A had no humidity): avg = 50
+      expect(deviceStats!.statistics.humidity.avg).toBe(50);
+      expect(deviceStats!.statistics.humidity.min).toBe(50);
+      expect(deviceStats!.statistics.humidity.max).toBe(50);
+
+      // Pressure: neither reading had pressure → all null
+      expect(deviceStats!.statistics.pressure.avg).toBeNull();
     });
   });
 });

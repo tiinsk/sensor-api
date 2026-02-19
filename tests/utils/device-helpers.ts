@@ -17,6 +17,46 @@ export function generateTestDeviceId(): string {
 }
 
 /**
+ * Create a test device and seed it with readings.
+ * The device ID is added to `createdDeviceIds` so the caller's afterEach cleanup picks it up.
+ */
+export async function createTestDeviceWithReadings(opts: {
+  deviceOrder: number;
+  deviceName?: string;
+  readings: Array<{ timestamp: string; temperature: number; humidity?: number; pressure?: number }>;
+  headers: RequestHeaders;
+  createdDeviceIds: string[];
+}): Promise<string> {
+  const API_URL = getApiUrl();
+  const deviceId = generateTestDeviceId();
+
+  await fetch(`${API_URL}/api/devices`, {
+    method: 'POST',
+    headers: opts.headers,
+    body: JSON.stringify({
+      id: deviceId,
+      name: opts.deviceName ?? 'Test Device',
+      location: { x: 0, y: 0, type: null },
+      type: 'ruuvi',
+      disabled: false,
+      order: opts.deviceOrder,
+    }),
+  });
+
+  opts.createdDeviceIds.push(deviceId);
+
+  for (const reading of opts.readings) {
+    await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
+      method: 'POST',
+      headers: opts.headers,
+      body: JSON.stringify(reading),
+    });
+  }
+
+  return deviceId;
+}
+
+/**
  * Delete test devices from the API (for integration test cleanup)
  */
 export async function deleteTestDevices(
