@@ -268,7 +268,7 @@ describe('GET /api/statistics - Integration', () => {
       expect(response.status).toBe(404);
     });
 
-    it('should return 404 for disabled device', async () => {
+    it('should return 400 for missing startTime', async () => {
       const endTime = dateRanges.yesterday.end.toISOString();
 
       const response = await fetch(
@@ -277,6 +277,18 @@ describe('GET /api/statistics - Integration', () => {
       );
 
       expect(response.status).toBe(400);
+    });
+
+    it('should return 404 for disabled device (GET /api/devices/device-003/statistics)', async () => {
+      const startTime = dateRanges.yesterday.start.toISOString();
+      const endTime = dateRanges.yesterday.end.toISOString();
+
+      const response = await fetch(
+        `${API_URL}/api/devices/device-003/statistics?startTime=${startTime}&endTime=${endTime}`,
+        { headers }
+      );
+
+      expect(response.status).toBe(404);
     });
 
     it('should return 400 for missing endTime', async () => {
