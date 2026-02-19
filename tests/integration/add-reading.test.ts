@@ -5,7 +5,7 @@
 
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
-import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
+import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
 
 interface Reading {
@@ -256,6 +256,63 @@ describe('POST /api/devices/:id/readings - Integration', () => {
       expect(deviceBucket).toBeDefined();
       expect(deviceBucket!.values).toHaveLength(1);
       expect(deviceBucket!.values[0].avg).toBe(posted.temperature);
+    });
+  });
+
+  describe('Sensor value 0', () => {
+    const baseTime = () => new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(10, 0, 0, 0)).toISOString();
+
+    it('temperature 0 (falsy) is stored and reflected in /latest and /statistics', async () => {
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9995,
+        deviceName: 'Zero Temp Device',
+        readings: [{ temperature: 0, timestamp: baseTime() }],
+        headers,
+        createdDeviceIds,
+      });
+
+      const latestRes = await fetch(`${API_URL}/api/devices/${deviceId}/latest`, { headers });
+      expect(latestRes.status).toBe(200);
+      const latest = (await latestRes.json()) as { reading: { temperature: number } };
+      expect(latest.reading.temperature).toBe(0);
+
+      const statsRes = await fetch(
+        `${API_URL}/api/devices/${deviceId}/statistics?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}`,
+        { headers }
+      );
+      expect(statsRes.status).toBe(200);
+      const stats = (await statsRes.json()) as { statistics: { temperature: { avg: number; min: number; max: number } } };
+      expect(stats.statistics.temperature.avg).toBe(0);
+      expect(stats.statistics.temperature.min).toBe(0);
+      expect(stats.statistics.temperature.max).toBe(0);
+    });
+
+    it('battery 0 is stored and reflected in /latest', async () => {
+      const deviceId = generateTestDeviceId();
+      await fetch(`${API_URL}/api/devices`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          id: deviceId,
+          name: 'Battery Zero Device',
+          location: { x: 0, y: 0, type: null },
+          type: 'ruuvi',
+          disabled: false,
+          order: 9992,
+        }),
+      });
+      createdDeviceIds.push(deviceId);
+
+      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ temperature: 21, battery: 0, timestamp: baseTime() }),
+      });
+
+      const latestRes = await fetch(`${API_URL}/api/devices/${deviceId}/latest`, { headers });
+      expect(latestRes.status).toBe(200);
+      const latest = (await latestRes.json()) as { reading: { battery: number } };
+      expect(latest.reading.battery).toBe(0);
     });
   });
 });
