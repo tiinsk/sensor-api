@@ -54,7 +54,7 @@ This plan will create comprehensive integration tests to verify that both the **
 #### Integration Tests - Phase B: Enhanced Coverage
 
 **Phase B1: Timezone & Time Bucketing** (highest migration risk - CRITICAL)
-- [ ] **test-timezone-bucketing**: Verify time buckets align to Helsinki timezone, not UTC. A reading at `2026-02-11T22:30:00Z` (00:30 Helsinki) must be bucketed as Feb 12, not Feb 11. Test all levels (30 min, day, week, month) with readings near the UTC/Helsinki day boundary (22:00 UTC in winter)
+- [x] **test-timezone-bucketing**: Verify time buckets align to Helsinki timezone, not UTC. A reading at `2026-02-11T22:30:00Z` (00:30 Helsinki) must be bucketed as Feb 12, not Feb 11. Test all levels (30 min, day, week, month) with readings near the UTC/Helsinki day boundary (22:00 UTC in winter)
 - [ ] **test-dst-transitions**: Test spring forward (March 30, 2026: 3AM→4AM EET→EEST) and fall back (October 26, 2026: 4AM→3AM EEST→EET). Verify: no missing hour in spring, no double-counted hour in fall, day buckets have correct total hours (23h spring day, 25h fall day)
 
 **Phase B2: End-to-End Data Flow** (prevent data integrity bugs - CRITICAL)

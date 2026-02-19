@@ -945,4 +945,234 @@ describe('GET /api/readings - Integration', () => {
       expect(response.status).toBe(401);
     });
   });
+
+  // Helsinki is UTC+2 in winter (EET). Midnight Helsinki = 22:00 UTC previous day.
+  // These tests verify that the timezone parameter shifts day/week/month bucket boundaries
+  // to align with Helsinki time, not UTC.
+  describe('Helsinki Timezone Bucketing (Europe/Helsinki)', () => {
+    // Two readings that straddle the Helsinki day boundary (22:00 UTC = 00:00 EET):
+    // Reading A: 2026-02-10T21:59:59Z = Feb 10 23:59:59 EET → Helsinki day: Feb 10
+    // Reading B: 2026-02-10T22:00:00Z = Feb 11 00:00:00 EET → Helsinki day: Feb 11
+    // Without Helsinki tz both are in the same UTC day (Feb 10 UTC).
+    const HELSINKI_FEB_10 = '2026-02-10T21:59:59.000Z'; // 23:59:59 EET Feb 10
+    const HELSINKI_FEB_11 = '2026-02-10T22:00:00.000Z'; // 00:00:00 EET Feb 11
+
+    async function createDeviceWithTwoReadings(opts: {
+      deviceOrder: number;
+      readings: [
+        { timestamp: string; temperature: number },
+        { timestamp: string; temperature: number },
+      ];
+    }): Promise<string> {
+      const deviceId = generateTestDeviceId();
+      await fetch(`${API_URL}/api/devices`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          id: deviceId,
+          name: 'TZ Test Device',
+          location: { x: 0, y: 0, type: null },
+          type: 'ruuvi',
+          disabled: false,
+          order: opts.deviceOrder,
+        }),
+      });
+      createdDeviceIds.push(deviceId);
+
+      for (const reading of opts.readings) {
+        await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ temperature: reading.temperature, timestamp: reading.timestamp }),
+        });
+      }
+
+      return deviceId;
+    }
+
+    it('day level: readings on same UTC day fall into separate Helsinki day buckets', async () => {
+      const deviceId = await createDeviceWithTwoReadings({
+        deviceOrder: 9880,
+        readings: [
+          { timestamp: HELSINKI_FEB_10, temperature: 10 }, // 23:59:59 EET Feb 10 → Helsinki day Feb 10
+          { timestamp: HELSINKI_FEB_11, temperature: 20 }, // 00:00:00 EET Feb 11 → Helsinki day Feb 11
+        ],
+      });
+
+      // Wide query range that includes both readings
+      const response = await fetch(
+        `${API_URL}/api/readings?startTime=2026-02-09T22:00:00.000Z&endTime=2026-02-11T21:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+      const data = (await response.json()) as ReadingsResponse;
+      const device = data.values.find((d) => d.id === deviceId);
+      expect(device).toBeDefined();
+
+      // Must be 2 separate day buckets (Feb 10 and Feb 11 Helsinki)
+      expect(device!.values).toHaveLength(2);
+
+      const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+
+      // Feb 10 Helsinki bucket starts at 22:00 UTC Feb 9
+      expect(buckets[0].time).toBe('2026-02-09T22:00:00.000Z');
+      expect(buckets[0].avg).toBe(10);
+
+      // Feb 11 Helsinki bucket starts at 22:00 UTC Feb 10
+      expect(buckets[1].time).toBe('2026-02-10T22:00:00.000Z');
+      expect(buckets[1].avg).toBe(20);
+    });
+
+    it('day level: without timezone both readings fall into the same UTC day bucket', async () => {
+      const deviceId = await createDeviceWithTwoReadings({
+        deviceOrder: 9879,
+        readings: [
+          { timestamp: HELSINKI_FEB_10, temperature: 10 }, // 23:59:59 EET Feb 10
+          { timestamp: HELSINKI_FEB_11, temperature: 20 }, // 00:00:00 EET Feb 11
+        ],
+      });
+
+      // Same query but no timezone parameter (defaults to UTC)
+      const response = await fetch(
+        `${API_URL}/api/readings?startTime=2026-02-09T22:00:00.000Z&endTime=2026-02-11T21:59:59.999Z&type=temperature&level=day`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+      const data = (await response.json()) as ReadingsResponse;
+      const device = data.values.find((d) => d.id === deviceId);
+      expect(device).toBeDefined();
+
+      // Both in the same UTC day bucket (Feb 10 UTC)
+      expect(device!.values).toHaveLength(1);
+      expect(device!.values[0].time).toBe('2026-02-10T00:00:00.000Z');
+      expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
+    });
+
+    it('week level: readings on same UTC Sunday fall into separate Helsinki week buckets', async () => {
+      // Feb 8 is a Sunday.
+      // Reading A: 2026-02-08T21:59:59Z = Sun Feb 8 23:59:59 EET → Helsinki week: Mon Feb 2
+      // Reading B: 2026-02-08T22:00:00Z = Mon Feb 9 00:00:00 EET → Helsinki week: Mon Feb 9
+      // Without Helsinki tz: Feb 8 22:00 UTC is still Sunday UTC → both in week of Mon Feb 2
+
+      const deviceId = await createDeviceWithTwoReadings({
+        deviceOrder: 9878,
+        readings: [
+          { timestamp: '2026-02-08T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Sun Feb 8 → week of Mon Feb 2
+          { timestamp: '2026-02-08T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Mon Feb 9 → week of Mon Feb 9
+        ],
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/readings?startTime=2026-02-01T00:00:00.000Z&endTime=2026-02-15T00:00:00.000Z&type=temperature&level=week&timezone=Europe%2FHelsinki`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+      const data = (await response.json()) as ReadingsResponse;
+      const device = data.values.find((d) => d.id === deviceId);
+      expect(device).toBeDefined();
+
+      // Must be 2 separate week buckets
+      expect(device!.values).toHaveLength(2);
+
+      const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+
+      // Week of Mon Feb 2 (Helsinki) starts at Sun Feb 1 22:00 UTC
+      expect(buckets[0].time).toBe('2026-02-01T22:00:00.000Z');
+      expect(buckets[0].avg).toBe(10);
+
+      // Week of Mon Feb 9 (Helsinki) starts at Sun Feb 8 22:00 UTC
+      expect(buckets[1].time).toBe('2026-02-08T22:00:00.000Z');
+      expect(buckets[1].avg).toBe(20);
+    });
+
+    it('week level: without timezone both Sunday readings fall into the same UTC week bucket', async () => {
+      const deviceId = await createDeviceWithTwoReadings({
+        deviceOrder: 9877,
+        readings: [
+          { timestamp: '2026-02-08T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Sun Feb 8
+          { timestamp: '2026-02-08T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Mon Feb 9
+        ],
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/readings?startTime=2026-02-01T00:00:00.000Z&endTime=2026-02-15T00:00:00.000Z&type=temperature&level=week`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+      const data = (await response.json()) as ReadingsResponse;
+      const device = data.values.find((d) => d.id === deviceId);
+      expect(device).toBeDefined();
+
+      // Both on Sunday Feb 8 UTC → same week (Mon Feb 2 UTC)
+      expect(device!.values).toHaveLength(1);
+      expect(device!.values[0].time).toBe('2026-02-02T00:00:00.000Z');
+      expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
+    });
+
+    it('month level: readings on same UTC Jan 31 fall into separate Helsinki month buckets', async () => {
+      // Reading A: 2026-01-31T21:59:59Z = Jan 31 23:59:59 EET → Helsinki month: January
+      // Reading B: 2026-01-31T22:00:00Z = Feb 1  00:00:00 EET → Helsinki month: February
+      // Without Helsinki tz: both are Jan 31 UTC → same January bucket
+
+      const deviceId = await createDeviceWithTwoReadings({
+        deviceOrder: 9876,
+        readings: [
+          { timestamp: '2026-01-31T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Jan 31 → Helsinki month January
+          { timestamp: '2026-01-31T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Feb 1  → Helsinki month February
+        ],
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/readings?startTime=2025-12-31T22:00:00.000Z&endTime=2026-02-28T22:00:00.000Z&type=temperature&level=month&timezone=Europe%2FHelsinki`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+      const data = (await response.json()) as ReadingsResponse;
+      const device = data.values.find((d) => d.id === deviceId);
+      expect(device).toBeDefined();
+
+      // Must be 2 separate month buckets (January and February Helsinki)
+      expect(device!.values).toHaveLength(2);
+
+      const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+
+      // January Helsinki bucket starts at Dec 31 22:00 UTC
+      expect(buckets[0].time).toBe('2025-12-31T22:00:00.000Z');
+      expect(buckets[0].avg).toBe(10);
+
+      // February Helsinki bucket starts at Jan 31 22:00 UTC
+      expect(buckets[1].time).toBe('2026-01-31T22:00:00.000Z');
+      expect(buckets[1].avg).toBe(20);
+    });
+
+    it('month level: without timezone both readings fall into the same UTC January bucket', async () => {
+      const deviceId = await createDeviceWithTwoReadings({
+        deviceOrder: 9875,
+        readings: [
+          { timestamp: '2026-01-31T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Jan 31
+          { timestamp: '2026-01-31T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Feb 1
+        ],
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/readings?startTime=2025-12-31T22:00:00.000Z&endTime=2026-02-28T22:00:00.000Z&type=temperature&level=month`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+      const data = (await response.json()) as ReadingsResponse;
+      const device = data.values.find((d) => d.id === deviceId);
+      expect(device).toBeDefined();
+
+      // Both on Jan 31 UTC → same January UTC bucket
+      expect(device!.values).toHaveLength(1);
+      expect(device!.values[0].time).toBe('2026-01-01T00:00:00.000Z');
+      expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
+    });
+  });
 });
