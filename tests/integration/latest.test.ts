@@ -5,7 +5,7 @@
 
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
-import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
+import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import type { LatestDevice, LatestReadingsResponse } from './types';
 
 describe('Latest Readings - Integration', () => {
@@ -138,23 +138,13 @@ describe('Latest Readings - Integration', () => {
     });
 
     it('should return device without readings', async () => {
-      // Create a device without readings
-      const testDeviceId = generateTestDeviceId();
-
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
+      const testDeviceId = await createTestDeviceWithReadings({
+        deviceOrder: 999,
+        deviceName: 'Empty Device',
+        readings: [],
         headers,
-        body: JSON.stringify({
-          id: testDeviceId,
-          name: 'Empty Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 999,
-        }),
+        createdDeviceIds,
       });
-
-      createdDeviceIds.push(testDeviceId);
 
       const response = await fetch(`${API_URL}/api/devices/${testDeviceId}/latest`, {
         headers,

@@ -280,25 +280,12 @@ describe('POST /api/devices/:id/readings - Integration', () => {
     });
 
     it('battery 0 is stored and reflected in /latest', async () => {
-      const deviceId = generateTestDeviceId();
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9992,
+        deviceName: 'Battery Zero Device',
+        readings: [{ temperature: 21, battery: 0, timestamp: baseTime() }],
         headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: 'Battery Zero Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9992,
-        }),
-      });
-      createdDeviceIds.push(deviceId);
-
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ temperature: 21, battery: 0, timestamp: baseTime() }),
+        createdDeviceIds,
       });
 
       const latestRes = await fetch(`${API_URL}/api/devices/${deviceId}/latest`, { headers });

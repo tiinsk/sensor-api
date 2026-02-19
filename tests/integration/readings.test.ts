@@ -26,51 +26,17 @@ describe('GET /api/readings - Integration', () => {
 
   describe('Temperature Aggregation Correctness', () => {
     it('should aggregate 3 readings into correct 30-minute bucket', async () => {
-      const deviceId = generateTestDeviceId();
-
-      // Create device
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: '30min Test Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9999,
-        }),
-      });
-
-      createdDeviceIds.push(deviceId);
-
-      // Add 3 readings within same 30-min window (12:00-12:30)
       const baseDate = dateRanges.dayBeforeYesterday.start;
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9999,
+        deviceName: '30min Test Device',
+        readings: [
+          { temperature: 10.0, timestamp: new Date(new Date(baseDate).setUTCHours(12, 0, 0, 0)).toISOString() },
+          { temperature: 20.0, timestamp: new Date(new Date(baseDate).setUTCHours(12, 10, 0, 0)).toISOString() },
+          { temperature: 30.0, timestamp: new Date(new Date(baseDate).setUTCHours(12, 20, 0, 0)).toISOString() },
+        ],
         headers,
-        body: JSON.stringify({
-          temperature: 10.0,
-          timestamp: new Date(new Date(baseDate).setUTCHours(12, 0, 0, 0)).toISOString()
-        }),
-      });
-
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 20.0,
-          timestamp: new Date(new Date(baseDate).setUTCHours(12, 10, 0, 0)).toISOString()
-        }),
-      });
-
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 30.0,
-          timestamp: new Date(new Date(baseDate).setUTCHours(12, 20, 0, 0)).toISOString()
-        }),
+        createdDeviceIds,
       });
 
       // Query with 30-minute level
@@ -97,45 +63,17 @@ describe('GET /api/readings - Integration', () => {
     });
 
     it('should separate readings into correct day buckets', async () => {
-      const deviceId = generateTestDeviceId();
-
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: 'Day Bucket Test Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9998,
-        }),
-      });
-
-      createdDeviceIds.push(deviceId);
-
-      // Add readings on two different days
       const day1 = dateRanges.dayBeforeYesterday.start;
       const day2 = dateRanges.yesterday.start;
-
-      // Day 1: temp = 15
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9998,
+        deviceName: 'Day Bucket Test Device',
+        readings: [
+          { temperature: 15.0, timestamp: new Date(new Date(day1).setUTCHours(12, 0, 0, 0)).toISOString() },
+          { temperature: 25.0, timestamp: new Date(new Date(day2).setUTCHours(12, 0, 0, 0)).toISOString() },
+        ],
         headers,
-        body: JSON.stringify({
-          temperature: 15.0,
-          timestamp: new Date(new Date(day1).setUTCHours(12, 0, 0, 0)).toISOString()
-        }),
-      });
-
-      // Day 2: temp = 25
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 25.0,
-          timestamp: new Date(new Date(day2).setUTCHours(12, 0, 0, 0)).toISOString()
-        }),
+        createdDeviceIds,
       });
 
       // Query with day level for both days

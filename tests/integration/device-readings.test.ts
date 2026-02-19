@@ -5,7 +5,7 @@
 
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
-import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
+import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
 import type { AggregatedReading, TypeReadings, DeviceReadingsResponse } from './types';
 
@@ -26,35 +26,18 @@ describe('GET /api/devices/:id/readings - Integration', () => {
 
   describe('Multiple Sensor Types', () => {
     it('should return readings for multiple sensor types', async () => {
-      const deviceId = generateTestDeviceId();
-
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: 'Multi-Type Test Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9999,
-        }),
-      });
-
-      createdDeviceIds.push(deviceId);
-
       const baseDate = dateRanges.dayBeforeYesterday.start;
-
-      // Add readings with all three sensor types
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9999,
+        deviceName: 'Multi-Type Test Device',
+        readings: [{
           temperature: 20.0,
           humidity: 50.0,
           pressure: 1013.0,
-          timestamp: new Date(new Date(baseDate).setUTCHours(12, 0, 0, 0)).toISOString()
-        }),
+          timestamp: new Date(new Date(baseDate).setUTCHours(12, 0, 0, 0)).toISOString(),
+        }],
+        headers,
+        createdDeviceIds,
       });
 
       // Query for all three types
@@ -87,43 +70,18 @@ describe('GET /api/devices/:id/readings - Integration', () => {
     });
 
     it('should correctly aggregate multiple readings per sensor type', async () => {
-      const deviceId = generateTestDeviceId();
-
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: 'Aggregation Test Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9998,
-        }),
-      });
-
-      createdDeviceIds.push(deviceId);
-
       const baseDate = dateRanges.dayBeforeYesterday.start;
-
-      // Add 3 readings with different values
-      const readings = [
-        { temp: 10, humidity: 40, time: 0 },
-        { temp: 20, humidity: 50, time: 10 },
-        { temp: 30, humidity: 60, time: 20 },
-      ];
-
-      for (const reading of readings) {
-        await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            temperature: reading.temp,
-            humidity: reading.humidity,
-            timestamp: new Date(new Date(baseDate).setUTCHours(12, reading.time, 0, 0)).toISOString()
-          }),
-        });
-      }
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9998,
+        deviceName: 'Aggregation Test Device',
+        readings: [
+          { temperature: 10, humidity: 40, timestamp: new Date(new Date(baseDate).setUTCHours(12, 0, 0, 0)).toISOString() },
+          { temperature: 20, humidity: 50, timestamp: new Date(new Date(baseDate).setUTCHours(12, 10, 0, 0)).toISOString() },
+          { temperature: 30, humidity: 60, timestamp: new Date(new Date(baseDate).setUTCHours(12, 20, 0, 0)).toISOString() },
+        ],
+        headers,
+        createdDeviceIds,
+      });
 
       const types = 'temperature,humidity';
       const response = await fetch(
@@ -152,43 +110,17 @@ describe('GET /api/devices/:id/readings - Integration', () => {
 
   describe('Time Bucketing', () => {
     it('should correctly bucket readings by day', async () => {
-      const deviceId = generateTestDeviceId();
-
-      await fetch(`${API_URL}/api/devices`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          id: deviceId,
-          name: 'Day Bucket Device',
-          location: { x: 0, y: 0, type: null },
-          type: 'ruuvi',
-          disabled: false,
-          order: 9997,
-        }),
-      });
-
-      createdDeviceIds.push(deviceId);
-
-      // Add readings on two different days
       const day1 = dateRanges.dayBeforeYesterday.start;
       const day2 = dateRanges.yesterday.start;
-
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9997,
+        deviceName: 'Day Bucket Device',
+        readings: [
+          { temperature: 15.0, timestamp: new Date(new Date(day1).setUTCHours(12, 0, 0, 0)).toISOString() },
+          { temperature: 25.0, timestamp: new Date(new Date(day2).setUTCHours(12, 0, 0, 0)).toISOString() },
+        ],
         headers,
-        body: JSON.stringify({
-          temperature: 15.0,
-          timestamp: new Date(new Date(day1).setUTCHours(12, 0, 0, 0)).toISOString()
-        }),
-      });
-
-      await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          temperature: 25.0,
-          timestamp: new Date(new Date(day2).setUTCHours(12, 0, 0, 0)).toISOString()
-        }),
+        createdDeviceIds,
       });
 
       const startTime = dateRanges.dayBeforeYesterday.start.toISOString();
