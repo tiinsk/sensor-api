@@ -6,7 +6,6 @@
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
 import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
-import {NEW_API_URL} from "../utils/test-server";
 
 interface Device {
   id: string;
@@ -184,20 +183,20 @@ describe('POST /api/devices - Integration', () => {
         location: { x: 0, y: 0, type: null },
       };
 
-      const response1 = await fetch(`${NEW_API_URL}/api/devices`, {
+      const response1 = await fetch(`${API_URL}/api/devices`, {
         method: 'POST',
         headers,
         body: JSON.stringify(device),
       });
 
       expect(response1.status).toBe(201);
+      createdDeviceIds.push(testDeviceId);
 
-      const response2 = await fetch(`${NEW_API_URL}/api/devices`, {
+      const response2 = await fetch(`${API_URL}/api/devices`, {
         method: 'POST',
         headers,
         body: JSON.stringify(device),
       });
-
 
       expect(response2.status).toBe(409);
       const data = (await response2.json()) as { error: string };
