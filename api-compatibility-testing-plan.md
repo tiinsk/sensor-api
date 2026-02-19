@@ -58,7 +58,7 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **test-dst-transitions**: Test spring forward (March 29, 2026: 3AM→4AM EET→EEST) and fall back (October 25, 2026: 4AM→3AM EEST→EET). Verify: no missing hour in spring, no double-counted hour in fall, day buckets have correct total hours (23h spring day, 25h fall day)
 
 **Phase B2: End-to-End Data Flow** (prevent data integrity bugs - CRITICAL)
-- [ ] **test-reading-propagation**: POST a reading → verify it appears correctly in all three read endpoints: GET /api/latest (newest reading shown), GET /api/statistics (avg/min/max updated), GET /api/readings with matching time range and level (included in correct bucket)
+- [x] **test-reading-propagation**: POST a reading → verify it appears correctly in all three read endpoints: GET /api/latest (newest reading shown), GET /api/statistics (avg/min/max updated), GET /api/readings with matching time range and level (included in correct bucket)
 - [ ] **test-api-key-auth**: Test API key authentication used by Raspberry Pi sensor-data-sender. POST /api/devices/:id/readings with valid API key header → 201. Invalid API key → 401. Missing API key and no JWT → 401
 
 **Phase B3: Edge Cases & Robustness** (prevent crashes from unexpected input - IMPORTANT)

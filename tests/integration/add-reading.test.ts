@@ -179,4 +179,83 @@ describe('POST /api/devices/:id/readings - Integration', () => {
       expect(response.status).toBe(404);
     });
   });
+
+  describe('Reading Propagation', () => {
+    it('posted reading appears in /latest, /statistics, and /readings', async () => {
+      const deviceId = generateTestDeviceId();
+
+      await fetch(`${API_URL}/api/devices`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          id: deviceId,
+          name: 'Propagation Test Device',
+          location: { x: 0, y: 0, type: null },
+          type: 'ruuvi',
+          disabled: false,
+          order: 9996,
+        }),
+      });
+
+      createdDeviceIds.push(deviceId);
+
+      // Known values posted at a fixed past timestamp (yesterday noon UTC)
+      const timestamp = new Date(new Date(dateRanges.yesterday.start).setUTCHours(12, 0, 0, 0)).toISOString();
+      const posted = { temperature: 21.5, humidity: 55.0, pressure: 1012.5 };
+
+      const postResponse = await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ...posted, timestamp }),
+      });
+
+      expect(postResponse.status).toBe(201);
+
+      // --- 1. GET /api/devices/:id/latest ---
+      // The reading should be the latest (and only) reading for this device
+      const latestResponse = await fetch(`${API_URL}/api/devices/${deviceId}/latest`, { headers });
+      expect(latestResponse.status).toBe(200);
+
+      const latest = await latestResponse.json() as { reading: { temperature: number; humidity: number; pressure: number; timestamp: string } };
+      expect(latest.reading.temperature).toBe(posted.temperature);
+      expect(latest.reading.humidity).toBe(posted.humidity);
+      expect(latest.reading.pressure).toBe(posted.pressure);
+      expect(latest.reading.timestamp).toBe(timestamp);
+
+      // --- 2. GET /api/devices/:id/statistics ---
+      // Single reading: avg = min = max = the posted value
+      const statsResponse = await fetch(
+        `${API_URL}/api/devices/${deviceId}/statistics?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}`,
+        { headers }
+      );
+      expect(statsResponse.status).toBe(200);
+
+      const stats = await statsResponse.json() as {
+        statistics: {
+          temperature: { avg: number; min: number; max: number };
+          humidity: { avg: number; min: number; max: number };
+          pressure: { avg: number; min: number; max: number };
+        };
+      };
+      expect(stats.statistics.temperature.avg).toBe(posted.temperature);
+      expect(stats.statistics.temperature.min).toBe(posted.temperature);
+      expect(stats.statistics.temperature.max).toBe(posted.temperature);
+      expect(stats.statistics.humidity.avg).toBe(posted.humidity);
+      expect(stats.statistics.pressure.avg).toBe(posted.pressure);
+
+      // --- 3. GET /api/readings ---
+      // The reading should appear in the day bucket for yesterday
+      const readingsResponse = await fetch(
+        `${API_URL}/api/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&type=temperature&level=day`,
+        { headers }
+      );
+      expect(readingsResponse.status).toBe(200);
+
+      const readings = await readingsResponse.json() as { values: Array<{ id: string; values: Array<{ avg: number }> }> };
+      const deviceBucket = readings.values.find((d) => d.id === deviceId);
+      expect(deviceBucket).toBeDefined();
+      expect(deviceBucket!.values).toHaveLength(1);
+      expect(deviceBucket!.values[0].avg).toBe(posted.temperature);
+    });
+  });
 });
