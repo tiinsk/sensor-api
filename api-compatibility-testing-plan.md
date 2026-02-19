@@ -7,8 +7,8 @@ This plan will create comprehensive integration tests to verify that both the **
 ## TODO List
 
 ### Phase 1: Setup
-- [x] **setup-old-api-testing**: Install Jest + Supertest in old API, create jest.config.js, add test scripts to package.json
-- [x] **setup-new-api-testing**: Install Jest + Supertest in new API, create jest.config.js, add test scripts to package.json
+- [x] **setup-old-api-testing**: Install Jest in old API, create jest.config.js, add test scripts to package.json
+- [x] **setup-new-api-testing**: Install Jest in new API, create jest.config.js, add test scripts to package.json (tests use native `fetch` for HTTP)
 
 ### Phase 2: Data Seeding
 - [x] **create-old-api-seed**: Create seed script for old API (PostgreSQL) with 3 devices, 2,200+ readings per device (including 10-min intervals), user, and API key
@@ -74,8 +74,8 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **extract-shared-types**: The `Device`, `DeviceListResponse`, `ReadingsResponse` etc. interfaces are duplicated across 5+ test files. Extract to a shared `tests/integration/types.ts`
 
 ### Phase 4: Validation & Documentation
-- [ ] **document-api-differences**: Document all API behavioral differences discovered during testing (e.g., login response format, auth header format, timestamp precision)
-- [ ] **verify-all-tests-pass**: Run full test suite (compatibility + integration) and verify all pass with clean output
+- [x] **document-api-differences**: Document all API behavioral differences discovered during testing (e.g., login response format, auth header format, timestamp precision)
+- [x] **verify-all-tests-pass**: Run full test suite (compatibility + integration) and verify all pass with clean output
 
 ---
 
@@ -125,8 +125,8 @@ Based on [test-plan.md](test-plan.md), the following endpoints must work identic
 Add to both projects:
 
 - `jest` - Test framework
-- `supertest` - HTTP assertions
-- `@types/jest`, `@types/supertest` - TypeScript definitions
+- Native `fetch` (Node 18+) for HTTP requests in tests
+- `@types/jest` - TypeScript definitions for Jest
 
 #### 1.2 Create Test Configuration
 
@@ -511,7 +511,7 @@ description: Test API key for sensor-data-sender
 
 - `knex/seeds/test-data.ts` - Seed script with identical data to new API
 - `jest.config.js` - Jest configuration
-- `package.json` - Add test scripts and dependencies (Jest, Supertest)
+- `package.json` - Add test scripts and dependencies (Jest)
 
 ### New Files (New API - sensor-api/)
 
