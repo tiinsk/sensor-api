@@ -198,7 +198,7 @@ function aggregateReadings(
   type: ReadingType,
   level: TimeLevel,
   timezone: string
-): Array<{ time: string; avg: number; min: number; max: number }> {
+): Array<{ timestamp: string; avg: number; min: number; max: number }> {
   if (readings.length === 0) return [];
 
   // Group readings by time bucket
@@ -216,15 +216,15 @@ function aggregateReadings(
   });
 
   // Calculate aggregates for each bucket
-  const aggregated = Array.from(buckets.entries()).map(([time, values]) => ({
-    time,
+  const aggregated = Array.from(buckets.entries()).map(([timestamp, values]) => ({
+    timestamp,
     avg: values.reduce((sum, v) => sum + v, 0) / values.length,
     min: Math.min(...values),
     max: Math.max(...values),
   }));
 
   // Sort by time
-  aggregated.sort((a, b) => a.time.localeCompare(b.time));
+  aggregated.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
   return aggregated;
 }

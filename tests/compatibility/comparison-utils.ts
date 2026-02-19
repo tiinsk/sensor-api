@@ -241,8 +241,8 @@ function compareReadingValues(
     const newReading = newValues[j];
 
     // Compare timestamps (might need normalization)
-    if (oldReading.time !== newReading.time) {
-      differences.push(`${context}[${j}]: time mismatch (old=${oldReading.time}, new=${newReading.time})`);
+    if (oldReading.time !== newReading.timestamp) {
+      differences.push(`${context}[${j}]: time mismatch (old=${oldReading.time}, new=${newReading.timestamp})`);
     }
 
     // Compare aggregated values

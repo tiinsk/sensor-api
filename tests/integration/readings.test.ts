@@ -59,7 +59,7 @@ describe('GET /api/readings - Integration', () => {
       expect(bucket.max).toBe(30);
       
       // Verify time bucket is 12:00
-      expect(bucket.time).toContain('12:00:00');
+      expect(bucket.timestamp).toContain('12:00:00');
     });
 
     it('should separate readings into correct day buckets', async () => {
@@ -94,7 +94,7 @@ describe('GET /api/readings - Integration', () => {
       expect(deviceReadings!.values).toHaveLength(2); // 2 separate day buckets
 
       // Sort by time to ensure consistent order
-      const buckets = deviceReadings!.values.sort((a, b) => a.time.localeCompare(b.time));
+      const buckets = deviceReadings!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       // First day bucket
       expect(buckets[0].avg).toBe(15);
@@ -164,15 +164,15 @@ describe('GET /api/readings - Integration', () => {
       expect(deviceReadings!.values).toHaveLength(2); // 2 separate month buckets
 
       // Sort by time
-      const buckets = deviceReadings!.values.sort((a, b) => a.time.localeCompare(b.time));
+      const buckets = deviceReadings!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       // December bucket
       expect(buckets[0].avg).toBe(5);
-      expect(buckets[0].time).toContain('2025-12');
+      expect(buckets[0].timestamp).toContain('2025-12');
 
       // January bucket
       expect(buckets[1].avg).toBe(10);
-      expect(buckets[1].time).toContain('2026-01');
+      expect(buckets[1].timestamp).toContain('2026-01');
     });
 
     it('should separate readings into correct week buckets', async () => {
@@ -232,7 +232,7 @@ describe('GET /api/readings - Integration', () => {
       expect(deviceReadings!.values).toHaveLength(2); // 2 separate week buckets
 
       // Sort by time
-      const buckets = deviceReadings!.values.sort((a, b) => a.time.localeCompare(b.time));
+      const buckets = deviceReadings!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       // Week 1
       expect(buckets[0].avg).toBe(12);
@@ -306,19 +306,19 @@ describe('GET /api/readings - Integration', () => {
       expect(deviceReadings!.values).toHaveLength(2); // 2 separate 30-min buckets
 
       // Sort by time
-      const buckets = deviceReadings!.values.sort((a, b) => a.time.localeCompare(b.time));
+      const buckets = deviceReadings!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       // First bucket (12:00-12:30): should have 10 and 20 (avg = 15)
       expect(buckets[0].avg).toBe(15); // (10 + 20) / 2
       expect(buckets[0].min).toBe(10);
       expect(buckets[0].max).toBe(20);
-      expect(buckets[0].time).toContain('12:00:00');
+      expect(buckets[0].timestamp).toContain('12:00:00');
 
       // Second bucket (12:30-13:00): should have only 99
       expect(buckets[1].avg).toBe(99);
       expect(buckets[1].min).toBe(99);
       expect(buckets[1].max).toBe(99);
-      expect(buckets[1].time).toContain('12:30:00');
+      expect(buckets[1].timestamp).toContain('12:30:00');
     });
 
     it('should handle day bucket boundaries correctly', async () => {
@@ -381,7 +381,7 @@ describe('GET /api/readings - Integration', () => {
       expect(deviceReadings!.values).toHaveLength(2); // 2 separate day buckets
 
       // Sort by time
-      const buckets = deviceReadings!.values.sort((a, b) => a.time.localeCompare(b.time));
+      const buckets = deviceReadings!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       // Day 1: should have only 10
       expect(buckets[0].avg).toBe(10);
@@ -505,7 +505,7 @@ describe('GET /api/readings - Integration', () => {
       const data = (await response.json()) as ReadingsResponse;
 
       const deviceReadings = data.values.find(d => d.id === deviceId);
-      
+
       // Device might not be in results at all, or have empty values array
       if (deviceReadings) {
         expect(deviceReadings.values).toEqual([]);
@@ -582,8 +582,8 @@ describe('GET /api/readings - Integration', () => {
       expect(deviceReadings!.values[2].avg).toBe(20); // 14:00
 
       // Verify times are ascending
-      expect(deviceReadings!.values[0].time < deviceReadings!.values[1].time).toBe(true);
-      expect(deviceReadings!.values[1].time < deviceReadings!.values[2].time).toBe(true);
+      expect(deviceReadings!.values[0].timestamp < deviceReadings!.values[1].timestamp).toBe(true);
+      expect(deviceReadings!.values[1].timestamp < deviceReadings!.values[2].timestamp).toBe(true);
     });
 
     it('should not include readings outside time range', async () => {
@@ -902,14 +902,14 @@ describe('GET /api/readings - Integration', () => {
       // Must be 2 separate day buckets (Feb 10 and Feb 11 Helsinki)
       expect(device!.values).toHaveLength(2);
 
-      const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+      const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       // Feb 10 Helsinki bucket starts at 22:00 UTC Feb 9
-      expect(buckets[0].time).toBe('2026-02-09T22:00:00.000Z');
+      expect(buckets[0].timestamp).toBe('2026-02-09T22:00:00.000Z');
       expect(buckets[0].avg).toBe(10);
 
       // Feb 11 Helsinki bucket starts at 22:00 UTC Feb 10
-      expect(buckets[1].time).toBe('2026-02-10T22:00:00.000Z');
+      expect(buckets[1].timestamp).toBe('2026-02-10T22:00:00.000Z');
       expect(buckets[1].avg).toBe(20);
     });
 
@@ -937,7 +937,7 @@ describe('GET /api/readings - Integration', () => {
 
       // Both in the same UTC day bucket (Feb 10 UTC)
       expect(device!.values).toHaveLength(1);
-      expect(device!.values[0].time).toBe('2026-02-10T00:00:00.000Z');
+      expect(device!.values[0].timestamp).toBe('2026-02-10T00:00:00.000Z');
       expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
     });
 
@@ -970,14 +970,14 @@ describe('GET /api/readings - Integration', () => {
       // Must be 2 separate week buckets
       expect(device!.values).toHaveLength(2);
 
-      const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+      const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       // Week of Mon Feb 2 (Helsinki) starts at Sun Feb 1 22:00 UTC
-      expect(buckets[0].time).toBe('2026-02-01T22:00:00.000Z');
+      expect(buckets[0].timestamp).toBe('2026-02-01T22:00:00.000Z');
       expect(buckets[0].avg).toBe(10);
 
       // Week of Mon Feb 9 (Helsinki) starts at Sun Feb 8 22:00 UTC
-      expect(buckets[1].time).toBe('2026-02-08T22:00:00.000Z');
+      expect(buckets[1].timestamp).toBe('2026-02-08T22:00:00.000Z');
       expect(buckets[1].avg).toBe(20);
     });
 
@@ -1004,7 +1004,7 @@ describe('GET /api/readings - Integration', () => {
 
       // Both on Sunday Feb 8 UTC → same week (Mon Feb 2 UTC)
       expect(device!.values).toHaveLength(1);
-      expect(device!.values[0].time).toBe('2026-02-02T00:00:00.000Z');
+      expect(device!.values[0].timestamp).toBe('2026-02-02T00:00:00.000Z');
       expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
     });
 
@@ -1036,14 +1036,14 @@ describe('GET /api/readings - Integration', () => {
       // Must be 2 separate month buckets (January and February Helsinki)
       expect(device!.values).toHaveLength(2);
 
-      const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+      const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       // January Helsinki bucket starts at Dec 31 22:00 UTC
-      expect(buckets[0].time).toBe('2025-12-31T22:00:00.000Z');
+      expect(buckets[0].timestamp).toBe('2025-12-31T22:00:00.000Z');
       expect(buckets[0].avg).toBe(10);
 
       // February Helsinki bucket starts at Jan 31 22:00 UTC
-      expect(buckets[1].time).toBe('2026-01-31T22:00:00.000Z');
+      expect(buckets[1].timestamp).toBe('2026-01-31T22:00:00.000Z');
       expect(buckets[1].avg).toBe(20);
     });
 
@@ -1070,7 +1070,7 @@ describe('GET /api/readings - Integration', () => {
 
       // Both on Jan 31 UTC → same January UTC bucket
       expect(device!.values).toHaveLength(1);
-      expect(device!.values[0].time).toBe('2026-01-01T00:00:00.000Z');
+      expect(device!.values[0].timestamp).toBe('2026-01-01T00:00:00.000Z');
       expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
     });
 
@@ -1115,7 +1115,7 @@ describe('GET /api/readings - Integration', () => {
         // Both readings must land in the single March 30 Helsinki day bucket
         expect(device!.values).toHaveLength(1);
         // March 30 midnight Helsinki = 22:00 UTC March 29 (still EET at midnight)
-        expect(device!.values[0].time).toBe('2025-03-29T22:00:00.000Z');
+        expect(device!.values[0].timestamp).toBe('2025-03-29T22:00:00.000Z');
         expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
       });
 
@@ -1144,14 +1144,14 @@ describe('GET /api/readings - Integration', () => {
 
         // Two separate day buckets: March 30 and March 31
         expect(device!.values).toHaveLength(2);
-        const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+        const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
         // March 30 Helsinki bucket (midnight EET = 22:00 UTC March 29)
-        expect(buckets[0].time).toBe('2025-03-29T22:00:00.000Z');
+        expect(buckets[0].timestamp).toBe('2025-03-29T22:00:00.000Z');
         expect(buckets[0].avg).toBe(10);
 
         // March 31 Helsinki bucket (midnight EEST = 21:00 UTC March 30 — offset shifts from +2 to +3)
-        expect(buckets[1].time).toBe('2025-03-30T21:00:00.000Z');
+        expect(buckets[1].timestamp).toBe('2025-03-30T21:00:00.000Z');
         expect(buckets[1].avg).toBe(20);
       });
 
@@ -1182,7 +1182,7 @@ describe('GET /api/readings - Integration', () => {
         // Both readings must land in the single October 26 Helsinki day bucket
         expect(device!.values).toHaveLength(1);
         // October 26 midnight Helsinki = 21:00 UTC October 25 (EEST, UTC+3 at start of day)
-        expect(device!.values[0].time).toBe('2025-10-25T21:00:00.000Z');
+        expect(device!.values[0].timestamp).toBe('2025-10-25T21:00:00.000Z');
         expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
       });
 
@@ -1211,14 +1211,14 @@ describe('GET /api/readings - Integration', () => {
 
         // Two separate day buckets: October 26 and October 27
         expect(device!.values).toHaveLength(2);
-        const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+        const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
         // October 26 Helsinki bucket (midnight EEST = 21:00 UTC October 25 — UTC+3 at start of day)
-        expect(buckets[0].time).toBe('2025-10-25T21:00:00.000Z');
+        expect(buckets[0].timestamp).toBe('2025-10-25T21:00:00.000Z');
         expect(buckets[0].avg).toBe(10);
 
         // October 27 Helsinki bucket (midnight EET = 22:00 UTC October 26 — offset shifts back to +2)
-        expect(buckets[1].time).toBe('2025-10-26T22:00:00.000Z');
+        expect(buckets[1].timestamp).toBe('2025-10-26T22:00:00.000Z');
         expect(buckets[1].avg).toBe(20);
       });
     });

@@ -29,7 +29,7 @@ export interface DeleteResponse {
 
 // --- Readings (GET /api/readings aggregated) ---
 export interface AggregatedReading {
-  time: string;
+  timestamp: string;
   avg: number;
   min: number;
   max: number;

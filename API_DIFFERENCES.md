@@ -36,7 +36,7 @@ This document tracks behavioral differences discovered during compatibility test
 - New API: Uses `/api/latest` route
 
 **Reading timestamp field:**
-- Old API: Uses `created_at` field
+- Old API: Uses `time` field
 - New API: Uses `timestamp` field
 - Same value, different field name
 
@@ -46,7 +46,7 @@ This document tracks behavioral differences discovered during compatibility test
 - New API: Uses `/api/devices/:id/latest` route
 
 **Reading timestamp field:**
-- Old API: Uses `created_at` field
+- Old API: Uses `time` field
 - New API: Uses `timestamp` field
 - Same value, different field name
 ---

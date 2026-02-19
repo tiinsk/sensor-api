@@ -140,7 +140,7 @@ describe('GET /api/devices/:id/readings - Integration', () => {
       expect(tempReadings!.values).toHaveLength(2); // 2 day buckets
 
       // Sort by time
-      const buckets = tempReadings!.values.sort((a, b) => a.time.localeCompare(b.time));
+      const buckets = tempReadings!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
       expect(buckets[0].avg).toBe(15);
       expect(buckets[1].avg).toBe(25);
