@@ -43,35 +43,39 @@ This plan will create comprehensive integration tests to verify that both the **
 - [x] **implement-integration-statistics-tests**: GET /api/statistics (verify stats for known date ranges)
 - [x] **implement-integration-readings-tests**: GET /api/readings (all timeframe/level/type combinations against seed data)
 - [x] **implement-integration-add-reading-tests**: POST /api/devices/:id/readings (add reading, verify appears in latest)
+- [x] **test-aggregation-correctness**: Manually calculate expected avg/min/max for known dataset, verify API matches exactly
+- [x] **test-device-isolation**: Verify device-001 readings don't affect device-002's statistics (data corruption check)
+- [x] **test-latest-is-newest**: Add old reading then new reading → latest shows newest (not random)
+- [x] **test-required-params**: Missing startTime/endTime/type/level → returns 400 with helpful message
+- [x] **test-invalid-enums**: Invalid type/level/timezone values → returns 400
+- [x] **test-time-range-validation**: startTime > endTime, invalid ISO dates → returns 400
+- [x] **test-empty-results**: Query date range with no data → returns empty array (not error)
 
-#### Integration Tests - Phase B: Enhanced Coverage (critical correctness & edge cases)
+#### Integration Tests - Phase B: Enhanced Coverage
 
-**Phase B1: Enhanced Correctness** (prevent data bugs - CRITICAL)
-- [ ] **test-aggregation-correctness**: Manually calculate expected avg/min/max for known dataset, verify API matches exactly
-- [ ] **test-timezone-bucketing**: Verify time buckets align correctly to Helsinki timezone (midnight = 22:00 UTC in winter)
-- [ ] **test-dst-transitions**: Test spring forward (March 30, 2026: 3AM→4AM) and fall back (October 26, 2026: 4AM→3AM) - verify missing/repeated hours handled correctly
-- [ ] **test-reading-propagation**: POST reading → verify appears in latest, statistics, and aggregated readings (end-to-end)
-- [ ] **test-device-isolation**: Verify device-001 readings don't affect device-002's statistics (data corruption check)
-- [ ] **test-latest-is-newest**: Add old reading then new reading → latest shows newest (not random)
-- [ ] **test-reading-count-accuracy**: Add N readings → verify count matches in all endpoints
-- [ ] **test-aggregation-completeness**: Verify all readings included in aggregation (none lost in bucketing)
+**Phase B1: Timezone & Time Bucketing** (highest migration risk - CRITICAL)
+- [ ] **test-timezone-bucketing**: Verify time buckets align to Helsinki timezone, not UTC. A reading at `2026-02-11T22:30:00Z` (00:30 Helsinki) must be bucketed as Feb 12, not Feb 11. Test all levels (30 min, day, week, month) with readings near the UTC/Helsinki day boundary (22:00 UTC in winter)
+- [ ] **test-dst-transitions**: Test spring forward (March 30, 2026: 3AM→4AM EET→EEST) and fall back (October 26, 2026: 4AM→3AM EEST→EET). Verify: no missing hour in spring, no double-counted hour in fall, day buckets have correct total hours (23h spring day, 25h fall day)
 
-**Phase B2: Validation & Edge Cases** (prevent crashes & user errors - IMPORTANT)
-- [ ] **test-required-params**: Missing startTime/endTime/type/level → returns 400 with helpful message
-- [ ] **test-invalid-enums**: Invalid type/level/timezone values → returns 400
-- [ ] **test-time-range-validation**: startTime > endTime, invalid ISO dates → returns 400
-- [ ] **test-empty-results**: Query date range with no data → returns empty array (not error)
-- [ ] **test-null-sensor-values**: Readings with null temperature/humidity/pressure handled correctly
-- [ ] **test-device-no-readings**: Statistics/latest for device without readings → returns appropriate response
-- [ ] **test-pagination-boundaries**: offset > totalCount, limit=0 → handles gracefully
-- [ ] **test-sensor-value-extremes**: Very high/low temperatures, zero values, negative battery
-- [ ] **test-error-messages**: Validation errors are clear and specify which field failed
-- [ ] **test-rapid-readings**: Add multiple readings quickly (simulates Raspberry Pi behavior)
+**Phase B2: End-to-End Data Flow** (prevent data integrity bugs - CRITICAL)
+- [ ] **test-reading-propagation**: POST a reading → verify it appears correctly in all three read endpoints: GET /api/latest (newest reading shown), GET /api/statistics (avg/min/max updated), GET /api/readings with matching time range and level (included in correct bucket)
+- [ ] **test-api-key-auth**: Test API key authentication used by Raspberry Pi sensor-data-sender. POST /api/devices/:id/readings with valid API key header → 201. Invalid API key → 401. Missing API key and no JWT → 401
+
+**Phase B3: Edge Cases & Robustness** (prevent crashes from unexpected input - IMPORTANT)
+- [ ] **test-null-sensor-values**: POST reading with only temperature (no humidity/pressure) → verify statistics and readings endpoints handle the missing values correctly (nulls in aggregation, not NaN or errors)
+- [ ] **test-device-no-readings-statistics**: GET /api/statistics and GET /api/devices/:id/statistics for a device with zero readings in the queried time range → returns null stats (not error or NaN). Note: device-without-readings for /latest already tested in Phase A
+- [ ] **test-pagination-boundaries**: offset > totalCount → returns empty values array (not error). Negative offset/limit → returns 400. Very large limit → returns all items without crash
+- [ ] **test-sensor-value-extremes**: temperature: 0 (falsy in JS), temperature: -40, pressure: 500/1100 (extremes), battery: 0, battery: negative → all stored and aggregated correctly without type coercion bugs
+- [ ] **test-jwt-edge-cases**: Expired JWT token → 401. Malformed token (e.g., `Bearer not.a.jwt`) → 401. Token signed with wrong secret → 401. These verify auth middleware rejects bad tokens, not just missing ones
+
+**Phase B4: Existing Test Fixes** (bugs & quality issues in current tests)
+- [ ] **fix-statistics-test-label**: In `statistics.test.ts`, the test named "should return 404 for disabled device" actually tests missing startTime (returns 400). Rename it and add a real disabled-device test for `GET /api/devices/device-003/statistics`
+- [ ] **fix-device-create-import**: In `device-create.test.ts`, the duplicate-ID test imports `NEW_API_URL` from `test-server.ts` instead of using `getApiUrl()`. Also the first created device is never added to `createdDeviceIds` so it leaks. Fix both issues
+- [ ] **extract-shared-types**: The `Device`, `DeviceListResponse`, `ReadingsResponse` etc. interfaces are duplicated across 5+ test files. Extract to a shared `tests/integration/types.ts`
 
 ### Phase 4: Validation & Documentation
-- [ ] **document-api-differences**: Document all API behavioral differences discovered during testing (e.g., login response format, auth header format)
-- [ ] **fix-time-bucketing**: Test and fix any time bucketing differences between PostgreSQL date_trunc and JavaScript truncateTime
-- [ ] **verify-all-tests-pass**: Run compatibility tests (old vs new) and integration tests (new API standalone) and verify all pass
+- [ ] **document-api-differences**: Document all API behavioral differences discovered during testing (e.g., login response format, auth header format, timestamp precision)
+- [ ] **verify-all-tests-pass**: Run full test suite (compatibility + integration) and verify all pass with clean output
 
 ---
 
@@ -606,10 +610,20 @@ it('should return device with battery level', async () => {
 
 ## Edge Cases to Test
 
-- Empty results (device with no readings)
-- Single reading (aggregation returns that one value)
-- Disabled devices are excluded from listings
-- Invalid device IDs return 404
-- Invalid credentials return 401
-- Missing query parameters return 400
-- Pagination at boundaries (offset > total count)
+**Already covered in Phase A:**
+- Empty results (device with no readings) ✓
+- Single reading (aggregation returns that one value) ✓
+- Disabled devices excluded from listings ✓
+- Invalid device IDs return 404 ✓
+- Invalid credentials return 401 ✓
+- Missing query parameters return 400 ✓
+
+**Covered in Phase B (pending):**
+- Pagination at boundaries (offset > total count, negative values)
+- Helsinki timezone bucketing near midnight (22:00 UTC)
+- DST spring forward / fall back transitions
+- Null/missing sensor values in aggregations
+- Zero and extreme sensor values (JS falsy edge cases)
+- Expired/malformed JWT tokens
+- API key authentication (Raspberry Pi use case)
+- Rapid sequential writes to same device
