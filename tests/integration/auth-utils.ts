@@ -2,7 +2,11 @@
  * Authentication utilities for integration tests
  */
 
+import jwt from 'jsonwebtoken';
 import { getApiUrl, TEST_USER } from './test-config';
+
+// Must match JWT_SECRET used by the running server (.env.local default)
+const TEST_JWT_SECRET = process.env.JWT_SECRET || '';
 
 interface LoginResponse {
   token: string;
@@ -34,6 +38,23 @@ export async function getAuthHeaders(): Promise<RequestHeaders> {
 
   return {
     Authorization: `Bearer ${loginData.token}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+/**
+ * Build Authorization headers using an API key JWT.
+ * The Raspberry Pi authenticates this way — it holds a pre-signed JWT whose
+ * payload is { apiKey: '<key>' } rather than { username: '<user>' }.
+ */
+export function getApiKeyAuthHeaders(apiKey: string): RequestHeaders {
+  const token = jwt.sign(
+    { apiKey, iat: Math.floor(Date.now() / 1000) },
+    TEST_JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+  return {
+    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 }

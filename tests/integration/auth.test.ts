@@ -1,8 +1,10 @@
 /**
- * Integration tests for POST /api/login endpoint
+ * Integration tests for POST /api/login endpoint and API key authentication
  */
 
 import { getApiUrl, TEST_USER } from './test-config';
+import { getApiKeyAuthHeaders } from './auth-utils';
+import { TEST_API_KEY } from '../utils/test-data';
 
 interface LoginSuccessResponse {
   token: string;
@@ -134,5 +136,38 @@ describe('POST /api/login - Integration', () => {
     });
 
     expect(devicesResponse.status).toBe(200);
+  });
+});
+
+// The Raspberry Pi sensor-data-sender authenticates with a pre-signed JWT whose
+// payload contains { apiKey } instead of { username }. There is no login endpoint
+// for API keys — the token is generated once and stored on the device.
+describe('API Key Authentication', () => {
+  const API_URL = getApiUrl();
+
+  it('valid API key token is accepted on GET /api/devices', async () => {
+    const headers = getApiKeyAuthHeaders(TEST_API_KEY);
+
+    const response = await fetch(`${API_URL}/api/devices`, { headers });
+
+    expect(response.status).toBe(200);
+  });
+
+  it('JWT containing unknown API key returns 401', async () => {
+    // Valid JWT signature, but the apiKey value is not in the database
+    const headers = getApiKeyAuthHeaders('nonexistent-api-key-xyz');
+
+    const response = await fetch(`${API_URL}/api/devices`, { headers });
+
+    expect(response.status).toBe(401);
+  });
+
+  it('raw API key string (not a JWT) returns 401', async () => {
+    // Sending the raw key string directly — it is not a valid JWT
+    const response = await fetch(`${API_URL}/api/devices`, {
+      headers: { Authorization: `Bearer ${TEST_API_KEY}` },
+    });
+
+    expect(response.status).toBe(401);
   });
 });

@@ -59,7 +59,7 @@ This plan will create comprehensive integration tests to verify that both the **
 
 **Phase B2: End-to-End Data Flow** (prevent data integrity bugs - CRITICAL)
 - [x] **test-reading-propagation**: POST a reading → verify it appears correctly in all three read endpoints: GET /api/latest (newest reading shown), GET /api/statistics (avg/min/max updated), GET /api/readings with matching time range and level (included in correct bucket)
-- [ ] **test-api-key-auth**: Test API key authentication used by Raspberry Pi sensor-data-sender. POST /api/devices/:id/readings with valid API key header → 201. Invalid API key → 401. Missing API key and no JWT → 401
+- [x] **test-api-key-auth**: Test API key authentication used by Raspberry Pi sensor-data-sender. GET /api/devices with valid API key header → 200. Invalid API key → 401. Missing API key and no JWT → 401
 
 **Phase B3: Edge Cases & Robustness** (prevent crashes from unexpected input - IMPORTANT)
 - [ ] **test-null-sensor-values**: POST reading with only temperature (no humidity/pressure) → verify statistics and readings endpoints handle the missing values correctly (nulls in aggregation, not NaN or errors)
