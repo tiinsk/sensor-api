@@ -6,30 +6,7 @@
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
 import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
-
-interface Device {
-  id: string;
-  name: string;
-  location: {
-    x: number;
-    y: number;
-    type: 'inside' | 'outside' | null;
-  };
-  disabled: boolean;
-  order: number;
-  type: 'ruuvi' | 'sensorbug';
-}
-
-interface DeviceListResponse {
-  count: number;
-  totCount: number;
-  limit: number;
-  values: Device[];
-}
-
-interface DeleteResponse {
-  message: string;
-}
+import type { Device, DeviceListResponse, DeleteResponse } from './types';
 
 describe('DELETE /api/devices/:id - Integration', () => {
   const API_URL = getApiUrl();

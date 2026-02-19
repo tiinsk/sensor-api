@@ -5,26 +5,7 @@
 
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
-
-interface Device {
-  id: string;
-  name: string;
-  location: {
-    x: number;
-    y: number;
-    type: 'inside' | 'outside' | null;
-  };
-  disabled: boolean;
-  order: number;
-  type: 'ruuvi' | 'sensorbug';
-}
-
-interface DeviceListResponse {
-  count: number;
-  totCount: number;
-  limit: number;
-  values: Device[];
-}
+import type { Device, DeviceListResponse } from './types';
 
 describe('GET /api/devices - Integration', () => {
   const API_URL = getApiUrl();

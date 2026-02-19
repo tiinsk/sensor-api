@@ -7,25 +7,7 @@ import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
-
-interface AggregatedReading {
-  time: string;
-  avg: number;
-  min: number;
-  max: number;
-}
-
-interface DeviceReadings {
-  id: string;
-  values: AggregatedReading[];
-}
-
-interface ReadingsResponse {
-  count: number;
-  totCount: number;
-  limit: number;
-  values: DeviceReadings[];
-}
+import type { AggregatedReading, DeviceReadings, ReadingsResponse } from './types';
 
 describe('GET /api/readings - Integration', () => {
   const API_URL = getApiUrl();

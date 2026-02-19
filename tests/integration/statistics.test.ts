@@ -7,38 +7,12 @@ import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
 import { deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
-
-interface Statistics {
-  avg: number | null;
-  min: number | null;
-  max: number | null;
-}
-
-interface DeviceStatistics {
-  id: string;
-  statistics: {
-    temperature: Statistics;
-    humidity: Statistics;
-    pressure: Statistics;
-  };
-}
-
-interface StatisticsResponse {
-  count: number;
-  totCount: number;
-  limit: number;
-  values: DeviceStatistics[];
-}
-
-// For single device endpoint
-interface SingleDeviceStatistics {
-  id: string;
-  statistics: {
-    temperature: Statistics;
-    humidity: Statistics;
-    pressure: Statistics;
-  };
-}
+import type {
+  Statistics,
+  DeviceStatistics,
+  StatisticsResponse,
+  SingleDeviceStatistics,
+} from './types';
 
 describe('GET /api/statistics - Integration', () => {
   const API_URL = getApiUrl();

@@ -71,7 +71,7 @@ This plan will create comprehensive integration tests to verify that both the **
 **Phase B4: Existing Test Fixes** (bugs & quality issues in current tests)
 - [x] **fix-statistics-test-label**: In `statistics.test.ts`, the test named "should return 404 for disabled device" actually tests missing startTime (returns 400). Rename it and add a real disabled-device test for `GET /api/devices/device-003/statistics`
 - [x] **fix-device-create-import**: In `device-create.test.ts`, the duplicate-ID test imports `NEW_API_URL` from `test-server.ts` instead of using `getApiUrl()`. Also the first created device is never added to `createdDeviceIds` so it leaks. Fix both issues
-- [ ] **extract-shared-types**: The `Device`, `DeviceListResponse`, `ReadingsResponse` etc. interfaces are duplicated across 5+ test files. Extract to a shared `tests/integration/types.ts`
+- [x] **extract-shared-types**: The `Device`, `DeviceListResponse`, `ReadingsResponse` etc. interfaces are duplicated across 5+ test files. Extract to a shared `tests/integration/types.ts`
 
 ### Phase 4: Validation & Documentation
 - [ ] **document-api-differences**: Document all API behavioral differences discovered during testing (e.g., login response format, auth header format, timestamp precision)

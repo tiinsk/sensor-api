@@ -6,28 +6,7 @@
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
 import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
-
-interface Reading {
-  timestamp: string;
-  battery: number | null;
-  humidity: number | null;
-  pressure: number | null;
-  temperature: number | null;
-}
-
-interface LatestDevice {
-  id: string;
-  name: string;
-  order: number;
-  reading: Reading | null;
-}
-
-interface LatestReadingsResponse {
-  count: number;
-  totCount: number;
-  limit: number;
-  values: LatestDevice[];
-}
+import type { LatestDevice, LatestReadingsResponse } from './types';
 
 describe('Latest Readings - Integration', () => {
   const API_URL = getApiUrl();

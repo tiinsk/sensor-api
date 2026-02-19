@@ -7,15 +7,7 @@ import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
-
-interface Reading {
-  deviceId: string;
-  timestamp: string;
-  temperature?: number;
-  humidity?: number;
-  pressure?: number;
-  battery?: number;
-}
+import type { PostedReading } from './types';
 
 describe('POST /api/devices/:id/readings - Integration', () => {
   const API_URL = getApiUrl();
@@ -97,7 +89,7 @@ describe('POST /api/devices/:id/readings - Integration', () => {
       });
 
       expect(response.status).toBe(201);
-      const reading = (await response.json()) as Reading;
+      const reading = (await response.json()) as PostedReading;
       expect(reading.temperature).toBe(22.5);
       expect(reading.humidity).toBe(55);
       expect(reading.timestamp).toBeDefined();
@@ -134,7 +126,7 @@ describe('POST /api/devices/:id/readings - Integration', () => {
       });
 
       expect(response.status).toBe(201);
-      const reading = (await response.json()) as Reading;
+      const reading = (await response.json()) as PostedReading;
       expect(reading.temperature).toBe(18);
       expect(reading.timestamp).toBe(pastTimestamp);
     });

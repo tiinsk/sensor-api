@@ -6,19 +6,7 @@
 import { getApiUrl } from './test-config';
 import { getAuthHeaders, RequestHeaders } from './auth-utils';
 import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
-
-interface Device {
-  id: string;
-  name: string;
-  location: {
-    x: number;
-    y: number;
-    type: 'inside' | 'outside' | null;
-  };
-  disabled: boolean;
-  order: number;
-  type: 'ruuvi' | 'sensorbug';
-}
+import type { Device } from './types';
 
 describe('POST /api/devices - Integration', () => {
   const API_URL = getApiUrl();
