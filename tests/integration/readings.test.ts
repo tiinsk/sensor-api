@@ -957,12 +957,9 @@ describe('GET /api/readings - Integration', () => {
     const HELSINKI_FEB_10 = '2026-02-10T21:59:59.000Z'; // 23:59:59 EET Feb 10
     const HELSINKI_FEB_11 = '2026-02-10T22:00:00.000Z'; // 00:00:00 EET Feb 11
 
-    async function createDeviceWithTwoReadings(opts: {
+    async function createDeviceWithReadings(opts: {
       deviceOrder: number;
-      readings: [
-        { timestamp: string; temperature: number },
-        { timestamp: string; temperature: number },
-      ];
+      readings: Array<{ timestamp: string; temperature: number }>;
     }): Promise<string> {
       const deviceId = generateTestDeviceId();
       await fetch(`${API_URL}/api/devices`, {
@@ -991,7 +988,7 @@ describe('GET /api/readings - Integration', () => {
     }
 
     it('day level: readings on same UTC day fall into separate Helsinki day buckets', async () => {
-      const deviceId = await createDeviceWithTwoReadings({
+      const deviceId = await createDeviceWithReadings({
         deviceOrder: 9880,
         readings: [
           { timestamp: HELSINKI_FEB_10, temperature: 10 }, // 23:59:59 EET Feb 10 → Helsinki day Feb 10
@@ -1025,7 +1022,7 @@ describe('GET /api/readings - Integration', () => {
     });
 
     it('day level: without timezone both readings fall into the same UTC day bucket', async () => {
-      const deviceId = await createDeviceWithTwoReadings({
+      const deviceId = await createDeviceWithReadings({
         deviceOrder: 9879,
         readings: [
           { timestamp: HELSINKI_FEB_10, temperature: 10 }, // 23:59:59 EET Feb 10
@@ -1056,7 +1053,7 @@ describe('GET /api/readings - Integration', () => {
       // Reading B: 2026-02-08T22:00:00Z = Mon Feb 9 00:00:00 EET → Helsinki week: Mon Feb 9
       // Without Helsinki tz: Feb 8 22:00 UTC is still Sunday UTC → both in week of Mon Feb 2
 
-      const deviceId = await createDeviceWithTwoReadings({
+      const deviceId = await createDeviceWithReadings({
         deviceOrder: 9878,
         readings: [
           { timestamp: '2026-02-08T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Sun Feb 8 → week of Mon Feb 2
@@ -1089,7 +1086,7 @@ describe('GET /api/readings - Integration', () => {
     });
 
     it('week level: without timezone both Sunday readings fall into the same UTC week bucket', async () => {
-      const deviceId = await createDeviceWithTwoReadings({
+      const deviceId = await createDeviceWithReadings({
         deviceOrder: 9877,
         readings: [
           { timestamp: '2026-02-08T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Sun Feb 8
@@ -1118,7 +1115,7 @@ describe('GET /api/readings - Integration', () => {
       // Reading B: 2026-01-31T22:00:00Z = Feb 1  00:00:00 EET → Helsinki month: February
       // Without Helsinki tz: both are Jan 31 UTC → same January bucket
 
-      const deviceId = await createDeviceWithTwoReadings({
+      const deviceId = await createDeviceWithReadings({
         deviceOrder: 9876,
         readings: [
           { timestamp: '2026-01-31T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Jan 31 → Helsinki month January
@@ -1151,7 +1148,7 @@ describe('GET /api/readings - Integration', () => {
     });
 
     it('month level: without timezone both readings fall into the same UTC January bucket', async () => {
-      const deviceId = await createDeviceWithTwoReadings({
+      const deviceId = await createDeviceWithReadings({
         deviceOrder: 9875,
         readings: [
           { timestamp: '2026-01-31T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Jan 31
@@ -1173,6 +1170,147 @@ describe('GET /api/readings - Integration', () => {
       expect(device!.values).toHaveLength(1);
       expect(device!.values[0].time).toBe('2026-01-01T00:00:00.000Z');
       expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
+    });
+
+    // DST dates for 2025 (past dates, so timestamps are accepted by the API):
+    //   Spring forward: March 30, 2025 (last Sunday of March 2025)
+    //   Fall back:      October 26, 2025 (last Sunday of October 2025)
+    //
+    // Spring forward March 30: at 01:00 UTC (03:00 EET) clocks advance to 04:00 EEST.
+    //   The 03:xx EET hour is skipped — March 30 Helsinki has only 23 hours.
+    //   March 30 Helsinki day:  2025-03-29T22:00:00Z → 2025-03-30T20:59:59Z
+    //   March 31 Helsinki day starts: 2025-03-30T21:00:00Z
+    //
+    // Fall back October 26: at 01:00 UTC (04:00 EEST) clocks go back to 03:00 EET.
+    //   The 03:xx hour repeats — October 26 Helsinki has 25 hours.
+    //   October 26 Helsinki day: 2025-10-25T21:00:00Z → 2025-10-26T21:59:59Z
+    //   October 27 Helsinki day starts: 2025-10-26T22:00:00Z
+    describe('DST Transitions', () => {
+      it('spring forward (March 30): readings before and after missing hour are in same Helsinki day bucket', async () => {
+        // 2025-03-30T00:30:00Z = 02:30 EET (before transition)   → March 30 Helsinki
+        // 2025-03-30T01:30:00Z = 04:30 EEST (after transition)   → March 30 Helsinki
+        // Both should land in the March 30 Helsinki bucket: 2025-03-29T22:00:00.000Z
+        const deviceId = await createDeviceWithReadings({
+          deviceOrder: 9870,
+          readings: [
+            { timestamp: '2025-03-30T00:30:00.000Z', temperature: 10 }, // 02:30 EET, before spring forward
+            { timestamp: '2025-03-30T01:30:00.000Z', temperature: 20 }, // 04:30 EEST, after spring forward
+          ],
+        });
+
+        const response = await fetch(
+          `${API_URL}/api/readings?startTime=2025-03-29T22:00:00.000Z&endTime=2025-03-30T20:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
+          { headers }
+        );
+
+        expect(response.status).toBe(200);
+        const data = (await response.json()) as ReadingsResponse;
+        const device = data.values.find((d) => d.id === deviceId);
+        expect(device).toBeDefined();
+
+        // Both readings must land in the single March 30 Helsinki day bucket
+        expect(device!.values).toHaveLength(1);
+        // March 30 midnight Helsinki = 22:00 UTC March 29 (still EET at midnight)
+        expect(device!.values[0].time).toBe('2025-03-29T22:00:00.000Z');
+        expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
+      });
+
+      it('spring forward (March 30): day boundary after DST — March 31 starts at 21:00 UTC (EEST), not 22:00', async () => {
+        // Last reading of March 30 Helsinki: 2025-03-30T20:59:59Z = 23:59:59 EEST
+        // First reading of March 31 Helsinki: 2025-03-30T21:00:00Z = 00:00:00 EEST March 31
+        const deviceId = await createDeviceWithReadings({
+          deviceOrder: 9869,
+          readings: [
+            { timestamp: '2025-03-30T20:59:59.000Z', temperature: 10 }, // 23:59:59 EEST → March 30 Helsinki
+            { timestamp: '2025-03-30T21:00:00.000Z', temperature: 20 }, // 00:00:00 EEST → March 31 Helsinki
+          ],
+        });
+
+        const response = await fetch(
+          `${API_URL}/api/readings?startTime=2025-03-29T22:00:00.000Z&endTime=2025-03-31T20:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
+          { headers }
+        );
+
+        expect(response.status).toBe(200);
+        const data = (await response.json()) as ReadingsResponse;
+        const device = data.values.find((d) => d.id === deviceId);
+        expect(device).toBeDefined();
+
+        // Two separate day buckets: March 30 and March 31
+        expect(device!.values).toHaveLength(2);
+        const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+
+        // March 30 Helsinki bucket (midnight EET = 22:00 UTC March 29)
+        expect(buckets[0].time).toBe('2025-03-29T22:00:00.000Z');
+        expect(buckets[0].avg).toBe(10);
+
+        // March 31 Helsinki bucket (midnight EEST = 21:00 UTC March 30 — offset shifts from +2 to +3)
+        expect(buckets[1].time).toBe('2025-03-30T21:00:00.000Z');
+        expect(buckets[1].avg).toBe(20);
+      });
+
+      it('fall back (October 26): readings in both occurrences of the repeated hour are in same Helsinki day bucket', async () => {
+        // 2025-10-26T00:30:00Z = 03:30 EEST (first occurrence, before fall-back)  → October 26 Helsinki
+        // 2025-10-26T01:30:00Z = 03:30 EET  (second occurrence, after fall-back)  → October 26 Helsinki
+        // Both should land in the October 26 Helsinki bucket: 2025-10-25T21:00:00.000Z
+        const deviceId = await createDeviceWithReadings({
+          deviceOrder: 9868,
+          readings: [
+            { timestamp: '2025-10-26T00:30:00.000Z', temperature: 10 }, // 03:30 EEST, first occurrence
+            { timestamp: '2025-10-26T01:30:00.000Z', temperature: 20 }, // 03:30 EET, repeated hour
+          ],
+        });
+
+        const response = await fetch(
+          `${API_URL}/api/readings?startTime=2025-10-25T21:00:00.000Z&endTime=2025-10-26T21:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
+          { headers }
+        );
+
+        expect(response.status).toBe(200);
+        const data = (await response.json()) as ReadingsResponse;
+        const device = data.values.find((d) => d.id === deviceId);
+        expect(device).toBeDefined();
+
+        // Both readings must land in the single October 26 Helsinki day bucket
+        expect(device!.values).toHaveLength(1);
+        // October 26 midnight Helsinki = 21:00 UTC October 25 (EEST, UTC+3 at start of day)
+        expect(device!.values[0].time).toBe('2025-10-25T21:00:00.000Z');
+        expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
+      });
+
+      it('fall back (October 26): day boundary after DST — October 27 starts at 22:00 UTC (EET), not 21:00', async () => {
+        // Last reading of October 26 Helsinki: 2025-10-26T21:59:59Z = 23:59:59 EET
+        // First reading of October 27 Helsinki: 2025-10-26T22:00:00Z = 00:00:00 EET October 27
+        const deviceId = await createDeviceWithReadings({
+          deviceOrder: 9867,
+          readings: [
+            { timestamp: '2025-10-26T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET → October 26 Helsinki
+            { timestamp: '2025-10-26T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET → October 27 Helsinki
+          ],
+        });
+
+        const response = await fetch(
+          `${API_URL}/api/readings?startTime=2025-10-25T21:00:00.000Z&endTime=2025-10-27T21:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
+          { headers }
+        );
+
+        expect(response.status).toBe(200);
+        const data = (await response.json()) as ReadingsResponse;
+        const device = data.values.find((d) => d.id === deviceId);
+        expect(device).toBeDefined();
+
+        // Two separate day buckets: October 26 and October 27
+        expect(device!.values).toHaveLength(2);
+        const buckets = device!.values.sort((a, b) => a.time.localeCompare(b.time));
+
+        // October 26 Helsinki bucket (midnight EEST = 21:00 UTC October 25 — UTC+3 at start of day)
+        expect(buckets[0].time).toBe('2025-10-25T21:00:00.000Z');
+        expect(buckets[0].avg).toBe(10);
+
+        // October 27 Helsinki bucket (midnight EET = 22:00 UTC October 26 — offset shifts back to +2)
+        expect(buckets[1].time).toBe('2025-10-26T22:00:00.000Z');
+        expect(buckets[1].avg).toBe(20);
+      });
     });
   });
 });
