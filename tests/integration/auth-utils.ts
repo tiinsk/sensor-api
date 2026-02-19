@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import { getApiUrl, TEST_USER } from './test-config';
 
 // Must match JWT_SECRET used by the running server (.env.local default)
-const TEST_JWT_SECRET = process.env.JWT_SECRET || '';
+export const TEST_JWT_SECRET = process.env.JWT_SECRET || '';
 
 interface LoginResponse {
   token: string;

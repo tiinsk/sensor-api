@@ -2,8 +2,9 @@
  * Integration tests for POST /api/login endpoint and API key authentication
  */
 
+import jwt from 'jsonwebtoken';
 import { getApiUrl, TEST_USER } from './test-config';
-import { getApiKeyAuthHeaders } from './auth-utils';
+import { getApiKeyAuthHeaders, TEST_JWT_SECRET } from './auth-utils';
 import { TEST_API_KEY } from '../utils/test-data';
 
 interface LoginSuccessResponse {
@@ -136,6 +137,44 @@ describe('POST /api/login - Integration', () => {
     });
 
     expect(devicesResponse.status).toBe(200);
+  });
+
+  describe('JWT edge cases', () => {
+    it('expired JWT token returns 401', async () => {
+      const token = jwt.sign(
+        { username: TEST_USER.username, iat: Math.floor(Date.now() / 1000) - 3600 },
+        TEST_JWT_SECRET,
+        { expiresIn: '-1s' }
+      );
+
+      const response = await fetch(`${API_URL}/api/devices`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('malformed token (e.g. not a valid JWT) returns 401', async () => {
+      const response = await fetch(`${API_URL}/api/devices`, {
+        headers: { Authorization: 'Bearer not.a.jwt' },
+      });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('token signed with wrong secret returns 401', async () => {
+      const token = jwt.sign(
+        { username: TEST_USER.username, iat: Math.floor(Date.now() / 1000) },
+        'wrong-secret-not-the-server-secret',
+        { expiresIn: '1h' }
+      );
+
+      const response = await fetch(`${API_URL}/api/devices`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      expect(response.status).toBe(401);
+    });
   });
 });
 
