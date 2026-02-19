@@ -64,7 +64,7 @@ This plan will create comprehensive integration tests to verify that both the **
 **Phase B3: Edge Cases & Robustness** (prevent crashes from unexpected input - IMPORTANT)
 - [x] **test-null-sensor-values**: POST reading with only temperature (no humidity/pressure) → verify statistics and readings endpoints handle the missing values correctly (nulls in aggregation, not NaN or errors)
 - [x] **test-device-no-readings-statistics**: GET /api/statistics and GET /api/devices/:id/statistics for a device with zero readings in the queried time range → returns null stats (not error or NaN). Note: device-without-readings for /latest already tested in Phase A
-- [ ] **test-pagination-boundaries**: offset > totalCount → returns empty values array (not error). Negative offset/limit → returns 400. Very large limit → returns all items without crash
+- [x] **test-pagination-boundaries**: offset > totalCount → returns empty values array (not error). Negative offset/limit → returns 400. API enforces limit max 100; limit > 100 → returns 400
 - [ ] **test-sensor-value-extremes**: temperature: 0 (falsy in JS), temperature: -40, pressure: 500/1100 (extremes), battery: 0, battery: negative → all stored and aggregated correctly without type coercion bugs
 - [ ] **test-jwt-edge-cases**: Expired JWT token → 401. Malformed token (e.g., `Bearer not.a.jwt`) → 401. Token signed with wrong secret → 401. These verify auth middleware rejects bad tokens, not just missing ones
 

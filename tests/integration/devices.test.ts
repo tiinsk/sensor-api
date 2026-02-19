@@ -108,6 +108,47 @@ describe('GET /api/devices - Integration', () => {
       expect(data.values[0].id).toBe('device-002');
     });
 
+    describe('Pagination boundaries', () => {
+      it('offset > totalCount returns 200 with empty values array (not error)', async () => {
+        // Seed has 2 enabled devices; offset 10 is beyond total
+        const response = await fetch(`${API_URL}/api/devices?limit=10&offset=10`, {
+          headers,
+        });
+
+        expect(response.status).toBe(200);
+
+        const data = (await response.json()) as DeviceListResponse;
+        expect(data.values).toEqual([]);
+        expect(data.count).toBe(0);
+        expect(data.totCount).toBe(2);
+        expect(data.limit).toBe(10);
+      });
+
+      it('negative offset returns 400', async () => {
+        const response = await fetch(`${API_URL}/api/devices?limit=10&offset=-1`, {
+          headers,
+        });
+
+        expect(response.status).toBe(400);
+      });
+
+      it('negative limit returns 400', async () => {
+        const response = await fetch(`${API_URL}/api/devices?limit=-1&offset=0`, {
+          headers,
+        });
+
+        expect(response.status).toBe(400);
+      });
+
+      it('limit > 100 returns 400 (API max limit is 100)', async () => {
+        const response = await fetch(`${API_URL}/api/devices?limit=101&offset=0`, {
+          headers,
+        });
+
+        expect(response.status).toBe(400);
+      });
+    });
+
     it('should return 401 without auth token', async () => {
       const response = await fetch(`${API_URL}/api/devices`);
 
