@@ -3,8 +3,8 @@
  * Tests aggregated statistics with focus on calculation correctness
  */
 
-import { getApiUrl } from './test-config';
-import { getAuthHeaders, RequestHeaders } from './auth-utils';
+import { getApiUrl } from './utils/test-config';
+import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
 import type {
@@ -12,7 +12,7 @@ import type {
   DeviceStatistics,
   StatisticsResponse,
   SingleDeviceStatistics,
-} from './types';
+} from './utils/types';
 
 describe('GET /api/statistics - Integration', () => {
   const API_URL = getApiUrl();

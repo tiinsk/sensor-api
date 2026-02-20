@@ -5,7 +5,7 @@
  * It should be run first before any actual compatibility tests.
  */
 
-import { verifyServersRunning, OLD_API_URL, NEW_API_URL } from '../utils/test-server';
+import { verifyServersRunning, OLD_API_URL, NEW_API_URL } from './utils/test-server';
 
 describe('API Compatibility Test Setup', () => {
   beforeAll(async () => {

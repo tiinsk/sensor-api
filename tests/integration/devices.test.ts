@@ -3,9 +3,9 @@
  * Tests new API against known seed data
  */
 
-import { getApiUrl } from './test-config';
-import { getAuthHeaders, RequestHeaders } from './auth-utils';
-import type { Device, DeviceListResponse } from './types';
+import { getApiUrl } from './utils/test-config';
+import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
+import type { Device, DeviceListResponse } from './utils/types';
 
 describe('GET /api/devices - Integration', () => {
   const API_URL = getApiUrl();

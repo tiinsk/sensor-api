@@ -4,9 +4,9 @@
  * Compare latest readings endpoints behavior between old and new APIs
  */
 
-import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from '../utils/test-server';
-import { getAuthHeaders, ApiAuthHeaders } from './auth-utils';
-import { compareLatestReadings, compareNumbers } from './comparison-utils';
+import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from './utils/test-server';
+import { getAuthHeaders, ApiAuthHeaders } from './utils/auth-utils';
+import { compareLatestReadings, compareNumbers } from './utils/comparison-utils';
 
 // Response type definitions
 

@@ -3,11 +3,11 @@
  * Tests adding readings to devices
  */
 
-import { getApiUrl } from './test-config';
-import { getAuthHeaders, RequestHeaders } from './auth-utils';
+import { getApiUrl } from './utils/test-config';
+import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
-import type { PostedReading } from './types';
+import type { PostedReading } from './utils/types';
 
 describe('POST /api/devices/:id/readings - Integration', () => {
   const API_URL = getApiUrl();

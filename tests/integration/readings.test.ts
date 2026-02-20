@@ -3,11 +3,11 @@
  * Tests aggregated readings with exact value verification
  */
 
-import { getApiUrl } from './test-config';
-import { getAuthHeaders, RequestHeaders } from './auth-utils';
+import { getApiUrl } from './utils/test-config';
+import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
-import type { AggregatedReading, DeviceReadings, ReadingsResponse } from './types';
+import type { AggregatedReading, DeviceReadings, ReadingsResponse } from './utils/types';
 
 describe('GET /api/readings - Integration', () => {
   const API_URL = getApiUrl();
@@ -57,7 +57,7 @@ describe('GET /api/readings - Integration', () => {
       expect(bucket.avg).toBe(20); // (10 + 20 + 30) / 3
       expect(bucket.min).toBe(10);
       expect(bucket.max).toBe(30);
-      
+
       // Verify time bucket is 12:00
       expect(bucket.timestamp).toContain('12:00:00');
     });

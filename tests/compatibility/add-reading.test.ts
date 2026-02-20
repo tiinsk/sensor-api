@@ -4,9 +4,9 @@
  * Tests the Raspberry Pi sensor data submission use case
  */
 
-import {NEW_API_URL, OLD_API_URL, verifyServersRunning} from '../utils/test-server';
-import { getAuthHeaders, ApiAuthHeaders } from './auth-utils';
-import { createTestDevice, deleteTestDevice } from './device-helpers';
+import {NEW_API_URL, OLD_API_URL, verifyServersRunning} from './utils/test-server';
+import { getAuthHeaders, ApiAuthHeaders } from './utils/auth-utils';
+import { createTestDevice, deleteTestDevice } from './utils/device-helpers';
 
 interface ReadingResponse {
   temperature: number | null;

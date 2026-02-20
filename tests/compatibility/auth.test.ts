@@ -4,7 +4,7 @@
  * Compare login endpoint behavior between old and new APIs
  */
 
-import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from '../utils/test-server';
+import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from './utils/test-server';
 import { TEST_USER } from '../utils/test-data';
 
 // Response type definitions

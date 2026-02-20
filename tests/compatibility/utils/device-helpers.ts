@@ -2,9 +2,9 @@
  * Helper functions for managing test devices in compatibility tests
  */
 
-import { OLD_API_URL, NEW_API_URL } from '../utils/test-server';
+import { OLD_API_URL, NEW_API_URL } from './test-server';
 import { ApiAuthHeaders } from './auth-utils';
-import { generateTestDeviceId } from '../utils/device-helpers';
+import { generateTestDeviceId } from '../../utils/device-helpers';
 
 export { generateTestDeviceId };
 

@@ -3,9 +3,9 @@
  * Compare old API (Hapi.js + PostgreSQL) vs new API (Lambda + DynamoDB)
  */
 
-import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from '../utils/test-server';
-import { getAuthHeaders, ApiAuthHeaders } from './auth-utils';
-import { createTestDevice, deleteTestDevice, generateTestDeviceId } from './device-helpers';
+import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from './utils/test-server';
+import { getAuthHeaders, ApiAuthHeaders } from './utils/auth-utils';
+import { createTestDevice, deleteTestDevice, generateTestDeviceId } from './utils/device-helpers';
 
 interface Device {
   id: string;

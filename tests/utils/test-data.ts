@@ -1,10 +1,11 @@
 /**
  * Shared test data constants
- * 
+ *
  * IMPORTANT: All timestamps use FIXED_NOW reference date
- * Tests mock Date.now() to return this date for deterministic testing
  */
 
+// If this is changed, seed-local.ts should probably be changed also
+// so that seed data contains some data from that timeframe
 export const FIXED_NOW = new Date('2026-02-12T10:00:00Z');
 
 export const TEST_USER = {
@@ -14,93 +15,54 @@ export const TEST_USER = {
 
 export const TEST_API_KEY = 'test-api-key-12345';
 
-export const TEST_DEVICES = {
-  'device-001': {
-    id: 'device-001',
-    name: 'Living Room Sensor',
-    location: {
-      x: 100,
-      y: 200,
-      type: 'inside',
-    },
-    type: 'ruuvi',
-    disabled: false,
-    order: 1,
-  },
-  'device-002': {
-    id: 'device-002',
-    name: 'Balcony Sensor',
-    location: {
-      x: 300,
-      y: 50,
-      type: 'outside',
-    },
-    type: 'ruuvi',
-    disabled: false,
-    order: 2,
-  },
-  'device-003': {
-    id: 'device-003',
-    name: 'Bedroom Sensor',
-    location: {
-      x: 200,
-      y: 300,
-      type: 'inside',
-    },
-    type: 'sensorbug',
-    disabled: true,
-    order: 3,
-  },
-};
-
 /**
  * Calculate date ranges relative to FIXED_NOW for testing
  * All dates are explicitly in UTC to ensure consistency across timezones
  */
 export function getTestDateRanges() {
   const now = FIXED_NOW;
-  
+
   // Yesterday (Feb 11, 2026 UTC)
   const yesterday = new Date(Date.UTC(2026, 1, 11, 0, 0, 0, 0));
   const yesterdayEnd = new Date(Date.UTC(2026, 1, 11, 23, 59, 59, 999));
-  
+
   // Day before yesterday (Feb 10, 2026 UTC)
   const dayBeforeYesterday = new Date(Date.UTC(2026, 1, 10, 0, 0, 0, 0));
   const dayBeforeYesterdayEnd = new Date(Date.UTC(2026, 1, 10, 23, 59, 59, 999));
-  
+
   // Current day (Feb 12, 2026, 00:00 to 10:00 UTC)
   const todayStart = new Date(Date.UTC(2026, 1, 12, 0, 0, 0, 0));
-  
+
   // Current week (Feb 10-12, 2026 - Monday is week start)
   // Feb 12, 2026 is a Thursday, so week starts on Monday Feb 9
   const currentWeekStart = new Date(Date.UTC(2026, 1, 9, 0, 0, 0, 0));
-  
+
   // Previous week (Feb 2-8, 2026)
   const previousWeekStart = new Date(Date.UTC(2026, 1, 2, 0, 0, 0, 0));
   const previousWeekEnd = new Date(Date.UTC(2026, 1, 8, 23, 59, 59, 999));
-  
+
   // Current month (February 2026, incomplete - Feb 1 to Feb 12 10:00)
   const currentMonthStart = new Date(Date.UTC(2026, 1, 1, 0, 0, 0, 0));
-  
+
   // January 2026 (complete month)
   const january2026Start = new Date(Date.UTC(2026, 0, 1, 0, 0, 0, 0));
   const january2026End = new Date(Date.UTC(2026, 0, 31, 23, 59, 59, 999));
-  
+
   // December 2025 (complete month)
   const december2025Start = new Date(Date.UTC(2025, 11, 1, 0, 0, 0, 0));
   const december2025End = new Date(Date.UTC(2025, 11, 31, 23, 59, 59, 999));
-  
+
   // November 2025 (complete month)
   const november2025Start = new Date(Date.UTC(2025, 10, 1, 0, 0, 0, 0));
   const november2025End = new Date(Date.UTC(2025, 10, 30, 23, 59, 59, 999));
-  
+
   // Current year (2026, incomplete - Jan 1 to Feb 12 10:00)
   const currentYearStart = new Date(Date.UTC(2026, 0, 1, 0, 0, 0, 0));
-  
+
   // Full year 2025 (complete)
   const year2025Start = new Date(Date.UTC(2025, 0, 1, 0, 0, 0, 0));
   const year2025End = new Date(Date.UTC(2025, 11, 31, 23, 59, 59, 999));
-  
+
   return {
     now,
     yesterday: { start: yesterday, end: yesterdayEnd },
@@ -115,11 +77,4 @@ export function getTestDateRanges() {
     currentYear: { start: currentYearStart, end: now },
     year2025: { start: year2025Start, end: year2025End },
   };
-}
-
-/**
- * Format date for API query parameters
- */
-export function formatDate(date: Date): string {
-  return date.toISOString();
 }

@@ -2,8 +2,8 @@
  * Shared device helper utilities for tests
  */
 
-import { getApiUrl } from '../integration/test-config';
-import { RequestHeaders } from '../integration/auth-utils';
+import { getApiUrl } from '../integration/utils/test-config';
+import { RequestHeaders } from '../integration/utils/auth-utils';
 
 /**
  * Generate a unique test device ID

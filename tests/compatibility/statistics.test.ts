@@ -4,10 +4,10 @@
  * Compare statistics endpoints behavior between old and new APIs
  */
 
-import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from '../utils/test-server';
+import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from './utils/test-server';
 import { getTestDateRanges } from '../utils/test-data';
-import { getAuthHeaders, ApiAuthHeaders } from './auth-utils';
-import { compareStatistics, compareNumbers } from './comparison-utils';
+import { getAuthHeaders, ApiAuthHeaders } from './utils/auth-utils';
+import { compareStatistics, compareNumbers } from './utils/comparison-utils';
 
 // Response type definitions
 

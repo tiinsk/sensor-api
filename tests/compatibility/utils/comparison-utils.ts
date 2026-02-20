@@ -276,7 +276,7 @@ export function compareLatestReadings(oldResponse: any, newResponse: any): Compa
     // Compare reading
     const oldReading = oldResponse.reading;
     const newReading = newResponse.reading;
-    
+
     if (oldReading && newReading) {
       if (!compareNumbers(oldReading.temperature, newReading.temperature)) {
         differences.push(`reading.temperature mismatch: old=${oldReading.temperature}, new=${newReading.temperature}`);
@@ -322,18 +322,4 @@ export function compareLatestReadings(oldResponse: any, newResponse: any): Compa
     matches: differences.length === 0,
     differences: differences.length > 0 ? differences : undefined,
   };
-}
-
-/**
- * Pretty print comparison differences
- */
-export function printDifferences(result: ComparisonResult, testName: string): void {
-  if (result.matches) {
-    console.log(`✓ ${testName}: Responses match`);
-  } else {
-    console.error(`✗ ${testName}: Responses differ`);
-    result.differences?.forEach((diff) => {
-      console.error(`  - ${diff}`);
-    });
-  }
 }

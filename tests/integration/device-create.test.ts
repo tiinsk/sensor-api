@@ -3,10 +3,10 @@
  * Tests device creation against new API
  */
 
-import { getApiUrl } from './test-config';
-import { getAuthHeaders, RequestHeaders } from './auth-utils';
+import { getApiUrl } from './utils/test-config';
+import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
-import type { Device } from './types';
+import type { Device } from './utils/types';
 
 describe('POST /api/devices - Integration', () => {
   const API_URL = getApiUrl();

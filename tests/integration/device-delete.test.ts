@@ -3,10 +3,10 @@
  * Tests device deletion operations against new API
  */
 
-import { getApiUrl } from './test-config';
-import { getAuthHeaders, RequestHeaders } from './auth-utils';
+import { getApiUrl } from './utils/test-config';
+import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices } from '../utils/device-helpers';
-import type { Device, DeviceListResponse, DeleteResponse } from './types';
+import type { Device, DeviceListResponse, DeleteResponse } from './utils/types';
 
 describe('DELETE /api/devices/:id - Integration', () => {
   const API_URL = getApiUrl();

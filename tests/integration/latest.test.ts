@@ -3,10 +3,10 @@
  * GET /api/latest and GET /api/devices/:id/latest
  */
 
-import { getApiUrl } from './test-config';
-import { getAuthHeaders, RequestHeaders } from './auth-utils';
+import { getApiUrl } from './utils/test-config';
+import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
-import type { LatestDevice, LatestReadingsResponse } from './types';
+import type { LatestDevice, LatestReadingsResponse } from './utils/types';
 
 describe('Latest Readings - Integration', () => {
   const API_URL = getApiUrl();

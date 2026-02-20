@@ -3,10 +3,10 @@
  * Compare old API (Hapi.js + PostgreSQL) vs new API (Lambda + DynamoDB)
  */
 
-import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from '../utils/test-server';
+import { OLD_API_URL, NEW_API_URL, verifyServersRunning } from './utils/test-server';
 import { getTestDateRanges } from '../utils/test-data';
-import { getAuthHeaders, ApiAuthHeaders } from './auth-utils';
-import { compareAllReadings, compareDeviceReadings } from './comparison-utils';
+import { getAuthHeaders, ApiAuthHeaders } from './utils/auth-utils';
+import { compareAllReadings, compareDeviceReadings } from './utils/comparison-utils';
 
 // Response type definitions
 interface AggregatedReading {

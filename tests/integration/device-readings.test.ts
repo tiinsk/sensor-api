@@ -3,11 +3,11 @@
  * Tests aggregated readings for a specific device
  */
 
-import { getApiUrl } from './test-config';
-import { getAuthHeaders, RequestHeaders } from './auth-utils';
+import { getApiUrl } from './utils/test-config';
+import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
-import type { AggregatedReading, TypeReadings, DeviceReadingsResponse } from './types';
+import type { AggregatedReading, TypeReadings, DeviceReadingsResponse } from './utils/types';
 
 describe('GET /api/devices/:id/readings - Integration', () => {
   const API_URL = getApiUrl();
@@ -167,7 +167,7 @@ describe('GET /api/devices/:id/readings - Integration', () => {
       data.values.forEach((typeReadings) => {
         expect(typeReadings).toHaveProperty('type');
         expect(typeReadings).toHaveProperty('values');
-        
+
         // Verify mathematical correctness
         typeReadings.values.forEach((reading) => {
           expect(reading.min).toBeLessThanOrEqual(reading.avg);

@@ -2,8 +2,8 @@
  * Authentication utilities for tests
  */
 
-import { OLD_API_URL, NEW_API_URL } from '../utils/test-server';
-import { TEST_USER } from '../utils/test-data';
+import { OLD_API_URL, NEW_API_URL } from './test-server';
+import { TEST_USER } from '../../utils/test-data';
 
 interface LoginSuccessResponse {
   token: string;

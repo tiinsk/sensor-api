@@ -3,8 +3,8 @@
  */
 
 import jwt from 'jsonwebtoken';
-import { getApiUrl, TEST_USER } from './test-config';
-import { getApiKeyAuthHeaders, TEST_JWT_SECRET } from './auth-utils';
+import { getApiUrl, TEST_USER } from './utils/test-config';
+import { getApiKeyAuthHeaders, TEST_JWT_SECRET } from './utils/auth-utils';
 import { TEST_API_KEY } from '../utils/test-data';
 
 interface LoginSuccessResponse {
