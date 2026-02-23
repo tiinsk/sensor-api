@@ -5,20 +5,10 @@ import { ApiStack } from '../lib/api-stack';
 
 const app = new cdk.App();
 
-// Get JWT secret from context or environment variable (REQUIRED)
-const jwtSecret = 
-  app.node.tryGetContext('jwtSecret') || 
-  process.env.JWT_SECRET;
-
-if (!jwtSecret) {
-  console.error('\n❌ ERROR: JWT_SECRET is required for deployment!');
-  console.error('\nProvide it in one of these ways:');
-  console.error('  1. Export as environment variable:');
-  console.error('     export JWT_SECRET="your-secure-secret-key"');
-  console.error('     npm run cdk:deploy');
-  console.error('\n  2. Pass as CDK context:');
-  console.error('     npm run cdk:deploy -- --context jwtSecret="your-secure-secret-key"');
-  console.error('\n💡 Tip: Generate a secure secret with: openssl rand -base64 32\n');
+// Production deploy: JWT comes from Secrets Manager only. Secret name is passed via --context (see package.json cdk:deploy script).
+const jwtSecretName = app.node.tryGetContext('jwtSecretName');
+if (!jwtSecretName) {
+  console.error('\n❌ ERROR: jwtSecretName is required.\n');
   process.exit(1);
 }
 
@@ -37,7 +27,7 @@ const dynamoDBStack = new DynamoDBStack(app, 'SensorApiDynamoDBStack', {
 const apiStack = new ApiStack(app, 'SensorApiStack', {
   env,
   dynamoDBStack,
-  jwtSecret,
+  jwtSecretName,
   description: 'Sensor API Lambda function and API Gateway',
 });
 

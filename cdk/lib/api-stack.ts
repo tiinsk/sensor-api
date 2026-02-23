@@ -1,18 +1,22 @@
 /**
  * API Stack - Lambda Function + API Gateway HTTP API
+ *
+ * Used only for production deploy to AWS.
  */
 
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Construct } from 'constructs';
 import { DynamoDBStack } from './dynamodb-stack';
 
 interface ApiStackProps extends cdk.StackProps {
   dynamoDBStack: DynamoDBStack;
-  jwtSecret: string;
+  /** Secrets Manager secret name for JWT (e.g. sensor-api/jwt-secret)*/
+  jwtSecretName: string;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -22,24 +26,30 @@ export class ApiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
-    const { dynamoDBStack, jwtSecret } = props;
+    const { dynamoDBStack, jwtSecretName } = props;
 
-    // Create Lambda function
+    const jwtSecretRef = secretsmanager.Secret.fromSecretNameV2(this, 'JwtSecret', jwtSecretName);
+
+    const logGroup = new logs.LogGroup(this, 'ApiLogGroup', {
+      retention: logs.RetentionDays.ONE_WEEK,
+    });
+
     this.lambdaFunction = new lambda.Function(this, 'SensorApiFunction', {
-      runtime: lambda.Runtime.NODEJS_18_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset('../dist/src'), // Compiled TypeScript output
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
       environment: {
-        AWS_REGION: this.region,
-        JWT_SECRET: jwtSecret,
+        JWT_SECRET_ARN: jwtSecretRef.secretArn,
         NODE_ENV: 'production',
         USE_LOCAL_DB: 'false', // Always use AWS DynamoDB in deployed environment
       },
-      logRetention: logs.RetentionDays.ONE_WEEK,
+      logGroup,
       description: 'Sensor API Lambda function with lambda-api routing',
     });
+
+    jwtSecretRef.grantRead(this.lambdaFunction);
 
     // Grant Lambda permissions to access DynamoDB tables
     dynamoDBStack.devicesTable.grantReadWriteData(this.lambdaFunction);
@@ -50,7 +60,7 @@ export class ApiStack extends cdk.Stack {
     // Create HTTP API Gateway
     const httpApi = new apigatewayv2.HttpApi(this, 'SensorApiGateway', {
       apiName: 'sensor-api',
-      description: 'Sensor data collection API',
+      description: 'Sensor data API',
       corsPreflight: {
         allowOrigins: ['*'],
         allowMethods: [
@@ -115,6 +125,16 @@ export class ApiStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ReadingsTableName', {
       value: dynamoDBStack.readingsTable.tableName,
       description: 'Readings DynamoDB table name',
+    });
+
+    new cdk.CfnOutput(this, 'AuthTableName', {
+      value: dynamoDBStack.authTable.tableName,
+      description: 'Auth DynamoDB table name',
+    });
+
+    new cdk.CfnOutput(this, 'UsersTableName', {
+      value: dynamoDBStack.usersTable.tableName,
+      description: 'Users DynamoDB table name',
     });
   }
 }

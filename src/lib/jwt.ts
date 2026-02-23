@@ -5,8 +5,6 @@
 import jwt from 'jsonwebtoken';
 import { env } from './env';
 
-const JWT_SECRET = env.JWT_SECRET;
-
 // Token expiration times (in seconds)
 const API_KEY_TOKEN_EXPIRATION = 60 * 60 * 24 * 60; // 60 days
 const USER_TOKEN_EXPIRATION = 60 * 60 * 24 * 60; // 60 days
@@ -32,7 +30,7 @@ export function signUserToken(username: string): string {
     username,
     iat: Math.floor(Date.now() / 1000), // JWT standard uses seconds
   };
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: USER_TOKEN_EXPIRATION,
   });
 }
@@ -45,7 +43,7 @@ export function signApiKeyToken(apiKey: string): string {
     apiKey,
     iat: Math.floor(Date.now() / 1000),
   };
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, env.JWT_SECRET, {
     expiresIn: API_KEY_TOKEN_EXPIRATION,
   });
 }
@@ -56,7 +54,7 @@ export function signApiKeyToken(apiKey: string): string {
  */
 export function verifyToken(token: string): TokenPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as TokenPayload;
     return decoded;
   } catch (error) {
     // Token is invalid or expired

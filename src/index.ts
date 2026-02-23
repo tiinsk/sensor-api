@@ -4,6 +4,7 @@
 
 import createAPI, { Request, Response } from 'lambda-api';
 import { APIGatewayProxyEvent, Context } from 'aws-lambda';
+import { ensureJwtSecretLoaded } from './lib/load-jwt-secret';
 
 // Auth handlers
 import { login } from './handlers/auth';
@@ -96,5 +97,6 @@ api.get('/api/devices/:id/statistics', requireAuth, getDeviceStatisticsHandler);
 
 // Export Lambda handler
 export const handler = async (event: APIGatewayProxyEvent, context: Context) => {
+  await ensureJwtSecretLoaded();
   return await api.run(event, context);
 };

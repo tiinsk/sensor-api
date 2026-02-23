@@ -6,8 +6,11 @@ import { ENV_VARS } from '../config/env-schema';
 
 function validateAndLoadEnv() {
   // Validate required environment variables
-  const required = [ENV_VARS.JWT_SECRET, ENV_VARS.AWS_REGION, ENV_VARS.NODE_ENV];
-  const missing = required.filter(key => !process.env[key]);
+  const useSecretsManager = !!process.env[ENV_VARS.JWT_SECRET_ARN];
+  const required = useSecretsManager
+    ? [ENV_VARS.AWS_REGION, ENV_VARS.NODE_ENV]
+    : [ENV_VARS.JWT_SECRET, ENV_VARS.AWS_REGION, ENV_VARS.NODE_ENV];
+  const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
     console.error(`❌ ERROR: Missing required environment variables: ${missing.join(', ')}`);
@@ -17,7 +20,10 @@ function validateAndLoadEnv() {
   }
 
   return {
-    JWT_SECRET: process.env[ENV_VARS.JWT_SECRET]!,
+    get JWT_SECRET(): string {
+      return process.env[ENV_VARS.JWT_SECRET] ?? '';
+    },
+    JWT_SECRET_ARN: process.env[ENV_VARS.JWT_SECRET_ARN],
     AWS_REGION: process.env[ENV_VARS.AWS_REGION]!,
     NODE_ENV: process.env[ENV_VARS.NODE_ENV]!,
     USE_LOCAL_DB: process.env[ENV_VARS.USE_LOCAL_DB] || 'false',
