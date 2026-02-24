@@ -38,12 +38,15 @@ Use an IAM user and access keys for the CLI. Do **not** use the root account for
 **Set Permissions**
 
 - Click "Attach policies directly"
-- Search for and select these policies:
-    - ✅ `AWSCloudFormationFullAccess`
-    - ✅ `AmazonDynamoDBFullAccess`
-    - ✅ `AWSLambda_FullAccess`
-    - ✅ `AmazonAPIGatewayAdministrator`
-    - ✅ `IAMFullAccess`
+- Search for and select these policies (minimal set for CDK bootstrap and deploy):
+    - `AWSCloudFormationFullAccess`
+    - `AmazonDynamoDBFullAccess`
+    - `AWSLambda_FullAccess`
+    - `AmazonAPIGatewayAdministrator`
+    - `IAMFullAccess`
+    - `AmazonS3FullAccess` (CDK bootstrap assets bucket)
+    - `AmazonSSMFullAccess` (CDK bootstrap)
+    - `AmazonEC2ContainerRegistryFullAccess` (CDK asset publishing)
 5. Click "Next"
 6. Review and click "Create user"
 
@@ -96,7 +99,7 @@ To run the API locally with SAM: install [AWS SAM CLI](https://docs.aws.amazon.c
    npm run build
    ```
 
-    The CDK stack packages the Lambda code from **`dist/src`** — the output of the TypeScript compiler (`tsc`). So you must run **`npm run build`** before deploy so that `dist/src` is up to date. **`npm run bundle`** produces a single file for **SAM local**. CDK does not use the bundle. For production deploy, only `build` (tsc) matters.
+   **Why:** `npm run build` compiles the **CDK stacks** (TypeScript → JavaScript in `dist/cdk`). Deploy runs that compiled CDK app. The **Lambda** code is built separately by CDK during deploy: CDK reads your `src/` (`dist/src` is not needed for deployment) TypeScript and bundles it (with all npm dependencies) into the package that gets uploaded. So you only need to run `build` before deploy for production. The `npm run bundle` script is for running the API locally with SAM.
 
 
 2. **Store the JWT secret in AWS Secrets Manager (one-time).**  
@@ -111,36 +114,41 @@ To run the API locally with SAM: install [AWS SAM CLI](https://docs.aws.amazon.c
    Or create it in the AWS Console (Secrets Manager → Store a new secret → Other type of secret → Plaintext, paste a generated secret). Note the **secret name** (e.g. `sensor-api/jwt-secret`).
    **Save the secret value somewhere secure** (e.g. password manager) if you need it for the `create:user:prod` and `create:api-key:prod` scripts; the Lambda does not need it in its environment.
 
+3. **Bootstrap CDK (one-time per account and region).**  
+   If you have not run CDK bootstrap in this account/region before, run once:
+   ```bash
+   cd cdk && cdk bootstrap --context jwtSecretName=sensor-api/jwt-secret
+   ```
 
-3. **Deploy the stacks:**
+4. **Deploy the stacks:**
    ```bash
    npm run cdk:deploy
    ```
-   The CDK uses the secret name `sensor-api/jwt-secret` by default (the one you created in step 2). Approve IAM changes if prompted. The Lambda will receive the secret ARN and fetch the value from Secrets Manager at cold start.
+   The CDK uses the secret name `sensor-api/jwt-secret` (passed via the script in package.json). Approve IAM changes if prompted. The Lambda will receive the secret ARN and fetch the value from Secrets Manager at cold start.
 
 
-4. **Capture outputs**  
+5. **Capture outputs**  
    Note the API URL and table names (devices, readings, users, auth) from the CDK outputs. You need these for the production scripts and for any custom IAM policies.
 
 ---
 
 ## 4. Post-deploy: create first user (production)
 
-**Important:** `npm run create:user` **by default** uses `.env.local` and usually `USE_LOCAL_DB=true`, so it targets **local** DynamoDB. For production you must use the dedicated production script.
+**Important:** `npm run create:user` **by default** uses `.env.local` and usually `USE_LOCAL_DB=true`, so it targets **local** DynamoDB. For production, you must use the dedicated production script.
+
+**Before running this command:** you need to have `.env.production` file setup containing following:
+
+   ```bash
+   JWT_SECRET=your-production-jwt-secret-from-aws-secret-manager
+   AWS_REGION=eu-north-1
+   USE_LOCAL_DB=false
+   NODE_ENV=production
+   ```
+
 
 ```bash
-JWT_SECRET=your-production-jwt-secret npm run create:user:prod
+npm run create:user:prod
 ```
-
-If you are not using aws default profile:
-
-```bash
-AWS_PROFILE=your-production-profile AWS_REGION=us-east-1 JWT_SECRET=your-production-jwt-secret npm run create:user:prod
-```
-
-- Replace `your-production-profile` with your AWS CLI profile name (or rely on default profile and omit `AWS_PROFILE`).
-- Replace `us-east-1` with the region where the stack is deployed (or set `AWS_REGION` in your environment and omit it from the command).
-- Replace `your-production-jwt-secret` with the JWT secret value you stored in Secrets Manager (and in your password manager). The same value is used by the Lambda (via Secrets Manager) and by these scripts when generating JWTs.
 
 ---
 
@@ -148,15 +156,13 @@ AWS_PROFILE=your-production-profile AWS_REGION=us-east-1 JWT_SECRET=your-product
 
 For production, use **only** the dedicated script `create:api-key:prod`. Do not use `npm run create:api-key` for production (that targets local by default).
 
+This command also requires the same `.env.production` as `npm run create:user:prod`.
+
 ### Exact command (production)
 
 ```bash
-AWS_PROFILE=your-production-profile AWS_REGION=us-east-1 JWT_SECRET=your-production-jwt-secret npm run create:api-key:prod
+npm run create:api-key:prod
 ```
-
-With default profile and `AWS_REGION` already set: `JWT_SECRET=your-production-jwt-secret npm run create:api-key:prod`
-
-Replace profile, region, and JWT secret as in the user-creation step. The script needs `JWT_SECRET` to output the signed JWT for the new key.
 
 ---
 
@@ -209,10 +215,10 @@ Use the production API base URL from the CDK deploy output.
 ## 7. Troubleshooting
 
 - **"User/API key created but I can't log in"**  
-  Confirm you created the user or key in **production**: correct region, production table names, and that you ran with `USE_LOCAL_DB=false` (i.e. used the `:prod` scripts).
+  Confirm you created the user or key in **production**: correct region, production table names (i.e. used the `:prod` scripts).
 
 - **"AWS credentials not found" / "Permission denied"**  
-  Set credentials (e.g. `AWS_PROFILE` or `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`) and `AWS_REGION`. The IAM identity must have `dynamodb:PutItem` and `dynamodb:GetItem` on the deployed tables (`SensorApi-Users`, `SensorApi-Auth`), and optionally `dynamodb:DescribeTable`.
+  Set credentials (e.g. `AWS_PROFILE` or `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`) and `AWS_REGION` and check access rights.
 
 - **Wrong table**  
   Production tables have no `TEST-` prefix. The `TEST-` prefix is used only when `NODE_ENV=test`.
@@ -275,7 +281,7 @@ npm run sam:local         # Run API locally
 # Production deploy
 npm run build             # Compile (required before deploy)
 npm run cdk:deploy        # Deploy to AWS
-npm run create:user:prod  # Create production user (set AWS_PROFILE, AWS_REGION, JWT_SECRET)
+npm run create:user:prod  # Create production user
 npm run create:api-key:prod  # Create production API key
 
 # AWS CLI

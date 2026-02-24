@@ -310,72 +310,7 @@ All endpoints require authentication (JWT token in `Authorization: Bearer <token
 
 ### Deploy to AWS
 
-1. **Set JWT Secret** (REQUIRED):
-   
-   The deployment will fail if `JWT_SECRET` is not provided. Choose one method:
-   
-   **Option A: Environment variable**
-   ```bash
-   export JWT_SECRET="your-secure-secret-key"
-   npm run cdk:deploy
-   ```
-   
-   **Option B: CDK context**
-   ```bash
-   npm run cdk:deploy -- --context jwtSecret="your-secure-secret-key"
-   ```
-   
-   **Generate a secure secret:**
-   ```bash
-   openssl rand -base64 32
-   ```
-
-2. **Build the project**:
-   ```bash
-   npm run build
-   ```
-
-3. **Synthesize CDK stacks** (optional - to preview):
-   ```bash
-   npm run cdk:synth
-   ```
-
-4. **Deploy all stacks**:
-   ```bash
-   npm run cdk:deploy
-   ```
-   
-   This will create:
-   - DynamoDB tables (Devices, Readings, Users, Auth)
-   - Lambda function with your API code
-   - API Gateway HTTP API endpoint
-   - CloudWatch Logs
-   - IAM roles and permissions
-
-5. **Note the API URL** from the deployment output:
-   ```
-   Outputs:
-   SensorApiStack.ApiUrl = https://abc123.execute-api.us-east-1.amazonaws.com
-   ```
-
-### Update Deployment
-
-After making code changes:
-
-```bash
-npm run build
-npm run cdk:deploy
-```
-
-### Destroy Resources
-
-To remove all AWS resources:
-
-```bash
-npm run cdk:destroy
-```
-
-**Note:** DynamoDB tables use `RemovalPolicy.RETAIN`, so they won't be deleted automatically. You'll need to manually delete them from the AWS Console if desired.
+Read PRODUCTION_SETUP.md
 
 ---
 
@@ -421,7 +356,7 @@ npm run cdk:destroy
   - **Impact:** Requires frontend changes to handle cursor tokens instead of page numbers
   - **Files:** `src/data/devices.ts`, `src/data/readings.ts`, API response types, frontend pagination components
 
-- [ ] **Security Best Practice: Use AWS Secrets Manager for JWT_SECRET**
+- [x] **Security Best Practice: Use AWS Secrets Manager for JWT_SECRET**
   - Current: `JWT_SECRET` stored as Lambda environment variable (visible in AWS Console)
   - Target: Store in AWS Secrets Manager and retrieve at runtime
   - Benefits: Automatic rotation, audit logging, encryption at rest, fine-grained access control

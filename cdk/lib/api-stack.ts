@@ -4,8 +4,10 @@
  * Used only for production deploy to AWS.
  */
 
+import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
@@ -34,14 +36,16 @@ export class ApiStack extends cdk.Stack {
       retention: logs.RetentionDays.ONE_WEEK,
     });
 
-    this.lambdaFunction = new lambda.Function(this, 'SensorApiFunction', {
+    // NodejsFunction bundles the handler and all dependencies with esbuild
+    const entry = path.join(process.cwd(), '..', 'src', 'index.ts');
+    this.lambdaFunction = new nodejs.NodejsFunction(this, 'SensorApiFunction', {
+      entry,
+      handler: 'handler',
       runtime: lambda.Runtime.NODEJS_24_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset('../dist/src'), // Compiled TypeScript output
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
       environment: {
-        JWT_SECRET_ARN: jwtSecretRef.secretArn,
+        JWT_SECRET_NAME: jwtSecretName,
         NODE_ENV: 'production',
         USE_LOCAL_DB: 'false', // Always use AWS DynamoDB in deployed environment
       },

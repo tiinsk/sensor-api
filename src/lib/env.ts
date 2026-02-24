@@ -6,7 +6,7 @@ import { ENV_VARS } from '../config/env-schema';
 
 function validateAndLoadEnv() {
   // Validate required environment variables
-  const useSecretsManager = !!process.env[ENV_VARS.JWT_SECRET_ARN];
+  const useSecretsManager = !!process.env[ENV_VARS.JWT_SECRET_NAME];
   const required = useSecretsManager
     ? [ENV_VARS.AWS_REGION, ENV_VARS.NODE_ENV]
     : [ENV_VARS.JWT_SECRET, ENV_VARS.AWS_REGION, ENV_VARS.NODE_ENV];
@@ -23,7 +23,7 @@ function validateAndLoadEnv() {
     get JWT_SECRET(): string {
       return process.env[ENV_VARS.JWT_SECRET] ?? '';
     },
-    JWT_SECRET_ARN: process.env[ENV_VARS.JWT_SECRET_ARN],
+    JWT_SECRET_NAME: process.env[ENV_VARS.JWT_SECRET_NAME],
     AWS_REGION: process.env[ENV_VARS.AWS_REGION]!,
     NODE_ENV: process.env[ENV_VARS.NODE_ENV]!,
     USE_LOCAL_DB: process.env[ENV_VARS.USE_LOCAL_DB] || 'false',
