@@ -281,5 +281,48 @@ describe('PUT /api/devices/:id - Integration', () => {
       expect(device.disabled).toBe(false);
       expect(device.location).toEqual({ x: 123, y: 456, type: 'outside' });
     });
+
+    it('should preserve latestReadingId when updating device', async () => {
+      // Add a reading so the device gets latestReadingId set
+      const readingTimestamp = new Date().toISOString();
+      const addReadingRes = await fetch(`${API_URL}/api/devices/${testDeviceId}/readings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          temperature: 21.5,
+          humidity: 60,
+          timestamp: readingTimestamp,
+        }),
+      });
+      expect(addReadingRes.status).toBe(201);
+
+      // Get device and confirm latestReadingId is set
+      const getBeforeRes = await fetch(`${API_URL}/api/devices/${testDeviceId}`, { headers });
+      expect(getBeforeRes.status).toBe(200);
+      const deviceBefore = (await getBeforeRes.json()) as Device;
+      expect(deviceBefore.latestReadingId).toBe(readingTimestamp);
+
+      // Update device (e.g. name only) without touching latestReadingId
+      const updates = {
+        name: 'Updated Name',
+        type: 'ruuvi' as const,
+        order: 9999,
+        disabled: false,
+        location: { x: 0, y: 0, type: null },
+      };
+      const updateRes = await fetch(`${API_URL}/api/devices/${testDeviceId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(updates),
+      });
+      expect(updateRes.status).toBe(200);
+
+      // Get device again and assert latestReadingId was preserved
+      const getAfterRes = await fetch(`${API_URL}/api/devices/${testDeviceId}`, { headers });
+      expect(getAfterRes.status).toBe(200);
+      const deviceAfter = (await getAfterRes.json()) as Device;
+      expect(deviceAfter.name).toBe('Updated Name');
+      expect(deviceAfter.latestReadingId).toBe(readingTimestamp);
+    });
   });
 });

@@ -25,6 +25,7 @@ function mapToDevice(item: any): Device {
     disabled: item.disabled,
     order: item.order,
     type: item.type,
+    latestReadingId: item.latestReadingId,
   };
 }
 
@@ -43,6 +44,7 @@ function mapToDynamoItem(device: Device) {
     disabled: device.disabled,
     order: device.order,
     type: device.type,
+    latestReadingId: device.latestReadingId,
   };
 }
 

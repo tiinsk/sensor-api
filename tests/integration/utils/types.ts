@@ -14,6 +14,7 @@ export interface Device {
   disabled: boolean;
   order: number;
   type: 'ruuvi' | 'sensorbug';
+  latestReadingId?: string;
 }
 
 export interface DeviceListResponse {

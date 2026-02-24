@@ -25,7 +25,7 @@
     "sam:invoke": "npm run sam:env && sam local invoke SensorApiFunction --env-vars env.json --event events/test-event.json",
     "test": "NODE_ENV=test dotenv -c -- jest",
     "test:watch": "NODE_ENV=test dotenv -c -- jest --watch",
-    "test:setup": "dotenv -c -- node_modules/.bin/ts-node scripts/setup-integration-tests.ts",
+    "test:setup": "NODE_ENV=test dotenv -c -- node_modules/.bin/ts-node scripts/setup-integration-tests.ts",
     "test:compatibility": "NODE_ENV=test dotenv -c -- jest tests/compatibility",
     "test:integration": "NODE_ENV=test dotenv -c -- jest tests/integration"
   },
