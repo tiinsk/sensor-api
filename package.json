@@ -20,6 +20,7 @@
     "create:api-key": "dotenv -c -- node_modules/.bin/ts-node scripts/create-api-key.ts",
     "create:user:prod": "dotenv -e .env.production -- node_modules/.bin/ts-node scripts/create-user.ts",
     "create:api-key:prod": "dotenv -e .env.production -- node_modules/.bin/ts-node scripts/create-api-key.ts",
+    "migrate:pg-to-dynamodb": "dotenv -e .env.migration -- node_modules/.bin/ts-node scripts/migrate-pg-to-dynamodb.ts",
     "sam:local": "dotenv -c -- bash -c 'npm run sam:env && npm run build:watch & sam local start-api --env-vars env.json --warm-containers EAGER --docker-network sensor-api_default --port ${LOCAL_API_PORT:-3000} & npm run bundle -- --watch'",
     "sam:test": "NODE_ENV=test dotenv -c -- bash -c 'npm run sam:env && npm run build:watch & sam local start-api --env-vars env.json --warm-containers EAGER --docker-network sensor-api_default --port ${TEST_API_PORT:-3000} & npm run bundle -- --watch'",
     "sam:invoke": "npm run sam:env && sam local invoke SensorApiFunction --env-vars env.json --event events/test-event.json",

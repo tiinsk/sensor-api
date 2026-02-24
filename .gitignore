@@ -18,6 +18,7 @@ samconfig.toml
 !.env.local.example
 env.json
 .env.production
+.env.migration
 
 # IDE
 .vscode/
