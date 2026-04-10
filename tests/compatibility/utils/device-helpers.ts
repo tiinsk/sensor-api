@@ -11,7 +11,7 @@ export { generateTestDeviceId };
 export interface TestDevice {
   id: string;
   name: string;
-  type: 'ruuvi' | 'sensorbug';
+  type: 'ruuvi' | 'sensorbug' | 'ruuvi-air';
   order: number;
   disabled?: boolean;
   location?: {

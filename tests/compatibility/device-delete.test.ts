@@ -10,7 +10,7 @@ import { createTestDevice, generateTestDeviceId } from './utils/device-helpers';
 interface Device {
   id: string;
   name: string;
-  type: 'ruuvi' | 'sensorbug';
+  type: 'ruuvi' | 'sensorbug' | 'ruuvi-air';
   order: number;
   disabled: boolean;
   location: {

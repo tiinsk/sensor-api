@@ -8,6 +8,7 @@ import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
 import type { PostedReading } from './utils/types';
+import { airQualityFromPm25Co2 } from '../../src/utils/air-quality';
 
 describe('POST /api/devices/:id/readings - Integration', () => {
   const API_URL = getApiUrl();
@@ -292,6 +293,84 @@ describe('POST /api/devices/:id/readings - Integration', () => {
       expect(latestRes.status).toBe(200);
       const latest = (await latestRes.json()) as { reading: { battery: number } };
       expect(latest.reading.battery).toBe(0);
+    });
+  });
+
+  describe('Ruuvi-air readings', () => {
+    it('stores and returns ruuvi-air metrics in latest and aggregated readings', async () => {
+      const deviceId = generateTestDeviceId();
+      const timestamp = new Date(new Date(dateRanges.yesterday.start).setUTCHours(13, 0, 0, 0)).toISOString();
+
+      await fetch(`${API_URL}/api/devices`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          id: deviceId,
+          name: 'Ruuvi Air Device',
+          location: { x: 0, y: 0, type: null },
+          type: 'ruuvi-air',
+          disabled: false,
+          order: 9991,
+        }),
+      });
+
+      createdDeviceIds.push(deviceId);
+
+      const payload = {
+        temperature: 24.65,
+        humidity: 30.2,
+        pressure: 1029.08,
+        pm25: 0.4,
+        co2: 917,
+        voc: 45,
+        nox: 1,
+        timestamp,
+      };
+      const expectedAirQuality = airQualityFromPm25Co2(payload.pm25, payload.co2);
+
+      const postResponse = await fetch(`${API_URL}/api/devices/${deviceId}/readings`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      expect(postResponse.status).toBe(201);
+      const posted = (await postResponse.json()) as PostedReading;
+      expect(posted.pm25).toBe(payload.pm25);
+      expect(posted.co2).toBe(payload.co2);
+      expect(posted.voc).toBe(payload.voc);
+      expect(posted.nox).toBe(payload.nox);
+      expect(posted.airQuality).toBe(expectedAirQuality);
+
+      const latestResponse = await fetch(`${API_URL}/api/devices/${deviceId}/latest`, { headers });
+      expect(latestResponse.status).toBe(200);
+      const latest = (await latestResponse.json()) as {
+        reading: { pm25: number; co2: number; voc: number; nox: number; airQuality: number };
+      };
+      expect(latest.reading.pm25).toBe(payload.pm25);
+      expect(latest.reading.co2).toBe(payload.co2);
+      expect(latest.reading.voc).toBe(payload.voc);
+      expect(latest.reading.nox).toBe(payload.nox);
+      expect(latest.reading.airQuality).toBe(expectedAirQuality);
+
+      const readingsResponse = await fetch(
+        `${API_URL}/api/devices/${deviceId}/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=co2,airQuality&level=day`,
+        { headers }
+      );
+      expect(readingsResponse.status).toBe(200);
+      const readings = (await readingsResponse.json()) as {
+        id: string;
+        values: Array<{ type: string; values: Array<{ avg: number; min: number; max: number }> }>;
+      };
+
+      const co2Series = readings.values.find((item) => item.type === 'co2');
+      const airQualitySeries = readings.values.find((item) => item.type === 'airQuality');
+      expect(co2Series?.values[0].avg).toBe(payload.co2);
+      expect(co2Series?.values[0].min).toBe(payload.co2);
+      expect(co2Series?.values[0].max).toBe(payload.co2);
+      expect(airQualitySeries?.values[0].avg).toBe(expectedAirQuality);
+      expect(airQualitySeries?.values[0].min).toBe(expectedAirQuality);
+      expect(airQualitySeries?.values[0].max).toBe(expectedAirQuality);
     });
   });
 });

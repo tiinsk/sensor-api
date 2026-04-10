@@ -7,10 +7,21 @@ import { createDynamoDBClient } from '../lib/db-client';
 import { getDevice } from './devices';
 import { TABLES } from '../config/constants';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+import { airQualityFromPm25Co2 } from '../utils/air-quality';
 
 const docClient = createDynamoDBClient();
 
-export type ReadingType = 'temperature' | 'humidity' | 'pressure' | 'lux' | 'battery';
+export type ReadingType =
+  | 'temperature'
+  | 'humidity'
+  | 'pressure'
+  | 'lux'
+  | 'battery'
+  | 'pm25'
+  | 'co2'
+  | 'voc'
+  | 'nox'
+  | 'airQuality';
 export type TimeLevel = '30 minutes' | 'day' | 'week' | 'month';
 
 interface Reading {
@@ -21,6 +32,10 @@ interface Reading {
   pressure?: number;
   lux?: number;
   battery?: number;
+  pm25?: number;
+  co2?: number;
+  voc?: number;
+  nox?: number;
 }
 
 /**
@@ -144,6 +159,10 @@ export async function addDeviceReading(params: {
     pressure?: number;
     lux?: number;
     battery?: number;
+    pm25?: number;
+    co2?: number;
+    voc?: number;
+    nox?: number;
     timestamp?: string;
   };
 }) {
@@ -164,6 +183,10 @@ export async function addDeviceReading(params: {
     pressure: params.payload.pressure,
     lux: params.payload.lux,
     battery: params.payload.battery,
+    pm25: params.payload.pm25,
+    co2: params.payload.co2,
+    voc: params.payload.voc,
+    nox: params.payload.nox,
   };
 
   // Add reading
@@ -186,7 +209,10 @@ export async function addDeviceReading(params: {
     })
   );
 
-  return reading;
+  return {
+    ...reading,
+    airQuality: airQualityFromPm25Co2(reading.pm25, reading.co2),
+  };
 }
 
 /**
@@ -205,7 +231,10 @@ function aggregateReadings(
   const buckets = new Map<string, number[]>();
 
   readings.forEach((reading) => {
-    const value = reading[type];
+    const value =
+      type === 'airQuality'
+        ? airQualityFromPm25Co2(reading.pm25, reading.co2)
+        : reading[type];
     if (value === undefined || value === null) return;
 
     const bucketKey = truncateTime(reading.timestamp, level, timezone);

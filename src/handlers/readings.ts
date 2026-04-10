@@ -14,7 +14,21 @@ const GetDeviceReadingsSchema = z
     types: z
       .string()
       .transform((str) => str.split(',').map((t) => t.trim()))
-      .pipe(z.array(z.enum(['temperature', 'humidity', 'pressure', 'battery']))),
+      .pipe(
+        z.array(
+          z.enum([
+            'temperature',
+            'humidity',
+            'pressure',
+            'battery',
+            'pm25',
+            'co2',
+            'voc',
+            'nox',
+            'airQuality',
+          ])
+        )
+      ),
     level: z.enum(['30 minutes', 'day', 'week', 'month']),
     timezone: z.string().optional(),
   })
@@ -34,7 +48,17 @@ const GetAllReadingsSchema = z
   .object({
     startTime: z.string().datetime(),
     endTime: z.string().datetime(),
-    type: z.enum(['temperature', 'humidity', 'pressure', 'battery']),
+    type: z.enum([
+      'temperature',
+      'humidity',
+      'pressure',
+      'battery',
+      'pm25',
+      'co2',
+      'voc',
+      'nox',
+      'airQuality',
+    ]),
     level: z.enum(['30 minutes', 'day', 'week', 'month']),
     limit: z.coerce.number().int().min(1).max(100).default(100),
     offset: z.coerce.number().int().min(0).default(0),
@@ -58,6 +82,10 @@ const AddReadingSchema = z
     humidity: z.number().optional(),
     pressure: z.number().optional(),
     battery: z.number().optional(),
+    pm25: z.number().optional(),
+    co2: z.number().optional(),
+    voc: z.number().optional(),
+    nox: z.number().optional(),
     timestamp: z.string().datetime().optional(),
   })
   .refine(

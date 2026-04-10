@@ -3,6 +3,7 @@ import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Device, Reading } from '../types';
 import { NotFoundError } from '../lib/errors';
 import { TABLES } from '../config/constants';
+import { airQualityFromPm25Co2 } from '../utils/air-quality';
 
 const docClient = createDynamoDBClient();
 
@@ -87,6 +88,11 @@ export async function getAllLatestReadings(params: ArrayRequestParams) {
             humidity: reading.humidity,
             pressure: reading.pressure,
             battery: reading.battery,
+            pm25: reading.pm25,
+            co2: reading.co2,
+            voc: reading.voc,
+            nox: reading.nox,
+            airQuality: airQualityFromPm25Co2(reading.pm25, reading.co2),
             timestamp: reading.timestamp,
           } : null,
         };
@@ -148,6 +154,11 @@ export async function getDeviceLatestReading(deviceId: string) {
         humidity: reading.humidity,
         pressure: reading.pressure,
         battery: reading.battery,
+        pm25: reading.pm25,
+        co2: reading.co2,
+        voc: reading.voc,
+        nox: reading.nox,
+        airQuality: airQualityFromPm25Co2(reading.pm25, reading.co2),
         timestamp: reading.timestamp,
       } : null,
     };

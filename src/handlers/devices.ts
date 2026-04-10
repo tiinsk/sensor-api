@@ -17,7 +17,7 @@ const AddDeviceSchema = z.object({
   id: z.string().length(12),
   order: z.number(),
   name: z.string(),
-  type: z.enum(['ruuvi', 'sensorbug']),
+  type: z.enum(['ruuvi', 'sensorbug', 'ruuvi-air']),
   location: z.object({
     x: z.number(),
     y: z.number(),
@@ -30,7 +30,7 @@ const AddDeviceSchema = z.object({
 const UpdateDeviceSchema = z.object({
   order: z.number(),
   name: z.string(),
-  type: z.enum(['ruuvi', 'sensorbug']),
+  type: z.enum(['ruuvi', 'sensorbug', 'ruuvi-air']),
   location: z.object({
     x: z.number(),
     y: z.number(),

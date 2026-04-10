@@ -13,7 +13,7 @@ import { compareDevices } from './utils/comparison-utils';
 interface Device {
   id: string;
   name: string;
-  type: 'ruuvi' | 'sensorbug';
+  type: 'ruuvi' | 'sensorbug' | 'ruuvi-air';
   order: number;
   disabled: boolean;
   location: {

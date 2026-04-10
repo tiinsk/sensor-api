@@ -3,6 +3,7 @@ import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Reading } from '../types';
 import {getAllDevices, getDevice} from './devices';
 import { TABLES } from '../config/constants';
+import { airQualityFromPm25Co2 } from '../utils/air-quality';
 
 const docClient = createDynamoDBClient();
 
@@ -18,6 +19,31 @@ interface Statistics {
     max: number | null;
   };
   pressure: {
+    avg: number | null;
+    min: number | null;
+    max: number | null;
+  };
+  pm25: {
+    avg: number | null;
+    min: number | null;
+    max: number | null;
+  };
+  co2: {
+    avg: number | null;
+    min: number | null;
+    max: number | null;
+  };
+  voc: {
+    avg: number | null;
+    min: number | null;
+    max: number | null;
+  };
+  nox: {
+    avg: number | null;
+    min: number | null;
+    max: number | null;
+  };
+  airQuality: {
     avg: number | null;
     min: number | null;
     max: number | null;
@@ -38,6 +64,11 @@ function calculateStatistics(readings: Reading[]): Statistics {
       temperature: { avg: null, min: null, max: null },
       humidity: { avg: null, min: null, max: null },
       pressure: { avg: null, min: null, max: null },
+      pm25: { avg: null, min: null, max: null },
+      co2: { avg: null, min: null, max: null },
+      voc: { avg: null, min: null, max: null },
+      nox: { avg: null, min: null, max: null },
+      airQuality: { avg: null, min: null, max: null },
     };
   }
 
@@ -45,6 +76,13 @@ function calculateStatistics(readings: Reading[]): Statistics {
   const temps = readings.filter(r => r.temperature !== null && r.temperature !== undefined).map(r => r.temperature!);
   const humids = readings.filter(r => r.humidity !== null && r.humidity !== undefined).map(r => r.humidity!);
   const pressures = readings.filter(r => r.pressure !== null && r.pressure !== undefined).map(r => r.pressure!);
+  const pm25Values = readings.filter(r => r.pm25 !== null && r.pm25 !== undefined).map(r => r.pm25!);
+  const co2Values = readings.filter(r => r.co2 !== null && r.co2 !== undefined).map(r => r.co2!);
+  const vocValues = readings.filter(r => r.voc !== null && r.voc !== undefined).map(r => r.voc!);
+  const noxValues = readings.filter(r => r.nox !== null && r.nox !== undefined).map(r => r.nox!);
+  const airQualityValues = readings
+    .map((r) => airQualityFromPm25Co2(r.pm25, r.co2))
+    .filter((v): v is number => v !== null);
 
   const calcStats = (values: number[]) => {
     if (values.length === 0) return { avg: null, min: null, max: null };
@@ -59,6 +97,11 @@ function calculateStatistics(readings: Reading[]): Statistics {
     temperature: calcStats(temps),
     humidity: calcStats(humids),
     pressure: calcStats(pressures),
+    pm25: calcStats(pm25Values),
+    co2: calcStats(co2Values),
+    voc: calcStats(vocValues),
+    nox: calcStats(noxValues),
+    airQuality: calcStats(airQualityValues),
   };
 }
 

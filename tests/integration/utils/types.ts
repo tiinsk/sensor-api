@@ -13,7 +13,7 @@ export interface Device {
   };
   disabled: boolean;
   order: number;
-  type: 'ruuvi' | 'sensorbug';
+  type: 'ruuvi' | 'sensorbug' | 'ruuvi-air';
   latestReadingId?: string;
 }
 
@@ -72,6 +72,11 @@ export interface DeviceStatistics {
     temperature: Statistics;
     humidity: Statistics;
     pressure: Statistics;
+    pm25: Statistics;
+    co2: Statistics;
+    voc: Statistics;
+    nox: Statistics;
+    airQuality: Statistics;
   };
 }
 
@@ -88,6 +93,11 @@ export interface SingleDeviceStatistics {
     temperature: Statistics;
     humidity: Statistics;
     pressure: Statistics;
+    pm25: Statistics;
+    co2: Statistics;
+    voc: Statistics;
+    nox: Statistics;
+    airQuality: Statistics;
   };
 }
 
@@ -98,6 +108,11 @@ export interface LatestReading {
   humidity: number | null;
   pressure: number | null;
   temperature: number | null;
+  pm25?: number | null;
+  co2?: number | null;
+  voc?: number | null;
+  nox?: number | null;
+  airQuality?: number | null;
 }
 
 export interface LatestDevice {
@@ -122,4 +137,9 @@ export interface PostedReading {
   humidity?: number;
   pressure?: number;
   battery?: number;
+  pm25?: number;
+  co2?: number;
+  voc?: number;
+  nox?: number;
+  airQuality?: number;
 }

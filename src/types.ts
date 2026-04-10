@@ -7,7 +7,7 @@ export interface ArrayRequestParams {
   offset: number;
 }
 
-export type DeviceType = 'ruuvi' | 'sensorbug';
+export type DeviceType = 'ruuvi' | 'sensorbug' | 'ruuvi-air';
 export type LocationType = 'inside' | 'outside' | null;
 
 export interface DeviceLocation {
@@ -33,6 +33,11 @@ export interface Reading {
   humidity: number | null;
   pressure: number | null;
   battery: number | null;
+  pm25?: number | null;
+  co2?: number | null;
+  voc?: number | null;
+  nox?: number | null;
+  airQuality?: number | null;
 }
 
 export interface User {

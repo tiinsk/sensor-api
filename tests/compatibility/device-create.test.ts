@@ -10,7 +10,7 @@ import { deleteTestDevice, generateTestDeviceId } from './utils/device-helpers';
 interface Device {
   id: string;
   name: string;
-  type: 'ruuvi' | 'sensorbug';
+  type: 'ruuvi' | 'sensorbug' | 'ruuvi-air';
   order: number;
   disabled: boolean;
   location: {
@@ -210,7 +210,7 @@ describe('POST /api/devices - Compatibility', () => {
     const device = {
       id: generateTestDeviceId(),
       name: 'Invalid Type Device',
-      type: 'invalid-type', // Only 'ruuvi' or 'sensorbug' allowed
+      type: 'invalid-type', // Only known device types are allowed
       order: 9996,
       disabled: false,
       location: { x: 0, y: 0, type: null },
