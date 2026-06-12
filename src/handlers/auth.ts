@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { getUser } from '../data/users';
 import { verifyPassword } from '../lib/password';
 import { signUserToken } from '../lib/jwt';
+import { getUserAuth } from '../lib/auth-middleware';
 
 const LoginSchema = z.object({
   username: z.string().min(1),
@@ -45,4 +46,13 @@ export async function login(req: Request, res: Response) {
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
+}
+
+/**
+ * POST /api/session/extend
+ * Issue a new user JWT when the current one is still valid
+ */
+export async function extendSession(req: Request, res: Response) {
+  const token = signUserToken(getUserAuth(req).username);
+  return res.json({ token });
 }

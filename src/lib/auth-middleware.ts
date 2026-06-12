@@ -14,6 +14,18 @@ export interface AuthContext {
   deviceId?: string;
 }
 
+export interface UserAuthContext {
+  isAuthenticated: true;
+  username: string;
+}
+
+type AuthenticatedRequest = Request & { authContext: AuthContext };
+
+type UserAuthenticatedRequest = Request & { authContext: UserAuthContext };
+
+export const getUserAuth = (req: Request): UserAuthContext =>
+  (req as UserAuthenticatedRequest).authContext;
+
 /**
  * Extract JWT token from Authorization header
  */
@@ -105,6 +117,31 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 
   // Attach auth context to request for use in handlers
-  (req as any).auth = authContext;
+  (req as AuthenticatedRequest).authContext = authContext;
+  next();
+}
+
+/**
+ * Middleware to require a user JWT (not an API key token)
+ */
+export async function requireUserAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const authContext = await authenticate(req);
+
+  if (!authContext.isAuthenticated) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (!authContext.username) {
+    return res.status(403).json({ error: 'User token required' });
+  }
+
+  (req as UserAuthenticatedRequest).authContext = {
+    isAuthenticated: authContext.isAuthenticated,
+    username: authContext.username,
+  };
   next();
 }

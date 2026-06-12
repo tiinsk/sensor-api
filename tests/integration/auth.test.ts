@@ -139,6 +139,66 @@ describe('POST /api/login - Integration', () => {
     expect(devicesResponse.status).toBe(200);
   });
 
+  describe('POST /api/session/extend', () => {
+    it('returns a renewed token for a valid user JWT', async () => {
+      const loginResponse = await fetch(`${API_URL}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: TEST_USER.username,
+          password: TEST_USER.password,
+        }),
+      });
+
+      const { token: originalToken } =
+        (await loginResponse.json()) as LoginSuccessResponse;
+
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
+      const extendResponse = await fetch(`${API_URL}/api/session/extend`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${originalToken}` },
+      });
+
+      expect(extendResponse.status).toBe(200);
+
+      const { token: renewedToken } =
+        (await extendResponse.json()) as LoginSuccessResponse;
+
+      expect(typeof renewedToken).toBe('string');
+      expect(renewedToken.split('.').length).toBe(3);
+      expect(renewedToken).not.toBe(originalToken);
+
+      const devicesResponse = await fetch(`${API_URL}/api/devices`, {
+        headers: { Authorization: `Bearer ${renewedToken}` },
+      });
+
+      expect(devicesResponse.status).toBe(200);
+    });
+
+    it('returns 401 without a token', async () => {
+      const response = await fetch(`${API_URL}/api/session/extend`, {
+        method: 'POST',
+      });
+
+      expect(response.status).toBe(401);
+    });
+
+    it('returns 403 for an API key token', async () => {
+      const headers = getApiKeyAuthHeaders(TEST_API_KEY);
+
+      const response = await fetch(`${API_URL}/api/session/extend`, {
+        method: 'POST',
+        headers,
+      });
+
+      expect(response.status).toBe(403);
+
+      const data = (await response.json()) as LoginErrorResponse;
+      expect(data.error).toBe('User token required');
+    });
+  });
+
   describe('JWT edge cases', () => {
     it('expired JWT token returns 401', async () => {
       const token = jwt.sign(

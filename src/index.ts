@@ -7,7 +7,7 @@ import { APIGatewayProxyEvent, Context } from 'aws-lambda';
 import { ensureJwtSecretLoaded } from './lib/load-jwt-secret';
 
 // Auth handlers
-import { login } from './handlers/auth';
+import { extendSession, login } from './handlers/auth';
 
 // Device handlers
 import {
@@ -38,7 +38,7 @@ import {
 } from './handlers/statistics';
 
 // Auth middleware
-import { requireAuth } from './lib/auth-middleware';
+import { requireAuth, requireUserAuth } from './lib/auth-middleware';
 
 // Create API instance with options
 const api = createAPI({
@@ -74,6 +74,7 @@ api.get('/', async (req: Request, res: Response) => {
 
 // Auth routes
 api.post('/api/login', login);
+api.post('/api/session/extend', requireUserAuth, extendSession);
 
 // Device routes
 api.get('/api/devices', requireAuth, getAllDevicesHandler);

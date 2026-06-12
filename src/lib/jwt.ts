@@ -6,8 +6,8 @@ import jwt from 'jsonwebtoken';
 import { env } from './env';
 
 // Token expiration times (in seconds)
-const API_KEY_TOKEN_EXPIRATION = 60 * 60 * 24 * 60; // 60 days
-const USER_TOKEN_EXPIRATION = 60 * 60 * 24 * 60; // 60 days
+const API_KEY_TOKEN_EXPIRATION_S = 60 * 60 * 24 * 60; // 60 days in seconds
+const USER_TOKEN_EXPIRATION_S = 60 * 60 * 24 * 60; // 60 days in seconds
 
 export interface UserTokenPayload {
   username: string;
@@ -31,7 +31,7 @@ export function signUserToken(username: string): string {
     iat: Math.floor(Date.now() / 1000), // JWT standard uses seconds
   };
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: USER_TOKEN_EXPIRATION,
+    expiresIn: USER_TOKEN_EXPIRATION_S,
   });
 }
 
@@ -44,7 +44,7 @@ export function signApiKeyToken(apiKey: string): string {
     iat: Math.floor(Date.now() / 1000),
   };
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: API_KEY_TOKEN_EXPIRATION,
+    expiresIn: API_KEY_TOKEN_EXPIRATION_S,
   });
 }
 
