@@ -7,7 +7,7 @@ import { APIGatewayProxyEvent, Context } from 'aws-lambda';
 import { ensureJwtSecretLoaded } from './lib/load-jwt-secret';
 
 // Auth handlers
-import { extendSession, login } from './handlers/auth';
+import { extendSession, issueToken, login } from './handlers/auth';
 
 // Device handlers
 import {
@@ -74,6 +74,7 @@ api.get('/', async (req: Request, res: Response) => {
 
 // Auth routes
 api.post('/api/login', login);
+api.post('/api/token', issueToken);
 api.post('/api/session/extend', requireUserAuth, extendSession);
 
 // Device routes

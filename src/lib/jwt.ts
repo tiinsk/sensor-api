@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import { env } from './env';
 
 // Token expiration times (in seconds)
-const API_KEY_TOKEN_EXPIRATION_S = 60 * 60 * 24 * 60; // 60 days in seconds
+export const API_KEY_TOKEN_EXPIRATION_S = 60 * 60 * 24 * 60; // 60 days in seconds
 const USER_TOKEN_EXPIRATION_S = 60 * 60 * 24 * 60; // 60 days in seconds
 
 export interface UserTokenPayload {

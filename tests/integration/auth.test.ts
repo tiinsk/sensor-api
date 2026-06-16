@@ -238,9 +238,52 @@ describe('POST /api/login - Integration', () => {
   });
 });
 
-// The Raspberry Pi sensor-data-sender authenticates with a pre-signed JWT whose
-// payload contains { apiKey } instead of { username }. There is no login endpoint
-// for API keys — the token is generated once and stored on the device.
+describe('POST /api/token', () => {
+  const API_URL = getApiUrl();
+
+  it('returns a token and expiresIn for a valid API key', async () => {
+    const response = await fetch(`${API_URL}/api/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: TEST_API_KEY }),
+    });
+
+    expect(response.status).toBe(200);
+
+    const data = (await response.json()) as { token: string; expiresIn: number };
+
+    expect(typeof data.token).toBe('string');
+    expect(data.token.split('.').length).toBe(3);
+    expect(data.expiresIn).toBe(60 * 60 * 24 * 60);
+
+    const devicesResponse = await fetch(`${API_URL}/api/devices`, {
+      headers: { Authorization: `Bearer ${data.token}` },
+    });
+
+    expect(devicesResponse.status).toBe(200);
+  });
+
+  it('returns 401 for an unknown API key', async () => {
+    const response = await fetch(`${API_URL}/api/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: 'nonexistent-api-key-xyz' }),
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  it('returns 400 when apiKey is missing', async () => {
+    const response = await fetch(`${API_URL}/api/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    expect(response.status).toBe(400);
+  });
+});
+
 describe('API Key Authentication', () => {
   const API_URL = getApiUrl();
 
