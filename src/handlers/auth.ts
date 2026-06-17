@@ -35,7 +35,7 @@ export async function login(req: Request, res: Response) {
     }
 
     // Verify password
-    const isValid = verifyPassword(password, user.passwordHash, user.salt);
+    const isValid = await verifyPassword(password, user.passwordHash);
     if (!isValid) {
       return res.status(401).json({ error: 'Unauthorized user' });
     }

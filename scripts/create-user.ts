@@ -7,7 +7,7 @@
  */
 import prompts from 'prompts';
 import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { saltHashPassword } from '../src/lib/password';
+import { hashPassword } from '../src/lib/password';
 import { TABLES } from '../src/config/constants';
 import {createDynamoDBClient} from "../src/lib/db-client";
 
@@ -84,7 +84,7 @@ async function createUser() {
 
   // Hash password
   console.log('\n⏳ Hashing password...');
-  const { passwordHash, salt } = saltHashPassword(passwordResponse.password);
+  const passwordHash = await hashPassword(passwordResponse.password);
 
   // Create user
   try {
@@ -95,7 +95,6 @@ async function createUser() {
         Item: {
           username,
           passwordHash,
-          salt,
           createdAt: new Date().toISOString(),
           disabled: false,
         },

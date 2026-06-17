@@ -5,13 +5,13 @@
 import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { TABLES } from '../config/constants';
+import { verifyPassword } from '../lib/password';
 
 const docClient = createDynamoDBClient();
 
 export interface User {
   username: string;
   passwordHash: string;
-  salt: string;
   disabled: boolean;
 }
 
@@ -60,13 +60,14 @@ export async function createUser(user: User): Promise<User> {
  */
 export async function validateUserCredentials(
   username: string,
-  passwordHash: string
+  password: string
 ): Promise<User | null> {
   const user = await getUser(username);
 
-  if (!user || user.disabled || user.passwordHash !== passwordHash) {
+  if (!user || user.disabled) {
     return null;
   }
 
-  return user;
+  const isValid = await verifyPassword(password, user.passwordHash);
+  return isValid ? user : null;
 }

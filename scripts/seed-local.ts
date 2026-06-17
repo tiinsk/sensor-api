@@ -1,7 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
-import crypto from 'crypto';
 import { TABLES } from '../src/config/constants';
+import { hashPassword } from '../src/lib/password';
 
 const client = new DynamoDBClient({
   endpoint: 'http://localhost:8000',
@@ -13,15 +13,6 @@ const client = new DynamoDBClient({
 });
 
 const docClient = DynamoDBDocumentClient.from(client);
-
-// Password hashing utilities (matches old API)
-function saltHashPassword(password: string) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.createHmac('sha512', salt);
-  hash.update(password);
-  const passwordHash = hash.digest('hex');
-  return { salt, passwordHash };
-}
 
 /**
  * Seeded random number generator for deterministic test data
@@ -293,14 +284,13 @@ async function seedData() {
   // ============================================
   // SEED USER
   // ============================================
-  const { salt, passwordHash } = saltHashPassword('testpassword');
+  const passwordHash = await hashPassword('testpassword');
   await docClient.send(
     new PutCommand({
       TableName: TABLES.USERS,
       Item: {
         username: 'testuser',
-        passwordHash: passwordHash,
-        salt: salt,
+        passwordHash,
         disabled: false,
       },
     })

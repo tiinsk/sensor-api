@@ -43,7 +43,6 @@ export interface Reading {
 export interface User {
   username: string;
   passwordHash: string;
-  salt: string;
   disabled: boolean;
 }
 
