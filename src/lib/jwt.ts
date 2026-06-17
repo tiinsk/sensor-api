@@ -16,7 +16,6 @@ export interface UserTokenPayload {
 
 export interface ApiKeyTokenPayload {
   apiKey: string;
-  deviceId?: string;
   iat: number;
 }
 

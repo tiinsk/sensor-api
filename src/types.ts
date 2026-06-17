@@ -48,6 +48,5 @@ export interface User {
 
 export interface ApiKey {
   apiKey: string;
-  deviceId?: string | null;
   description: string;
 }

@@ -393,7 +393,7 @@ Read PRODUCTION_SETUP.md
   - Target: Pre-aggregate data into summary tables or use DynamoDB Streams
   - Impact: Better performance for statistics/readings endpoints with long time ranges
   - Files: `src/data/readings.ts`, potentially new aggregation tables
-- [ ] **Remove all code related to device specific API keys (not in user anymore)**
+- [x] **Remove all code related to device specific API keys (not in user anymore)**
 
 ### Low Priority / Nice to Have
 

@@ -11,7 +11,6 @@ export interface AuthContext {
   isAuthenticated: boolean;
   username?: string;
   apiKey?: string;
-  deviceId?: string;
 }
 
 export interface UserAuthContext {
@@ -98,7 +97,6 @@ export async function authenticate(req: Request): Promise<AuthContext> {
     return {
       isAuthenticated: true,
       apiKey: payload.apiKey,
-      deviceId: payload.deviceId,
     };
   }
 
