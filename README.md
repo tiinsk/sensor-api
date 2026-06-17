@@ -318,9 +318,6 @@ Read PRODUCTION_SETUP.md
 
 ### High Priority
 
-- [ ] **Restrict API Gateway CORS to specific front-end origin(s) in production**
-  - Current: CORS is set to `allowOrigins: ['*']` in the CDK API stack. For production, restrict to the actual front-end origin(s) (e.g. `https://your-app.example.com`) to reduce abuse and clarify trust boundaries.
-
 - [ ] **Replace offset pagination with cursor-based pagination**
   - **Problem:** Current implementation scans ALL items to get accurate `totCount`, which is inefficient
     - For devices endpoint: Currently scans entire table on every request just to count items

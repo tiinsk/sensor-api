@@ -17,6 +17,6 @@
     "sourceMap": true,
     "allowImportingTsExtensions": false
   },
-  "include": ["src/**/*", "cdk/**/*", "scripts/**/*"],
+  "include": ["src/**/*", "cdk/**/*"],
   "exclude": ["node_modules", "dist", "cdk.out"]
 }

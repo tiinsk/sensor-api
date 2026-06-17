@@ -11,6 +11,7 @@ import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Construct } from 'constructs';
 import { DynamoDBStack } from './dynamodb-stack';
@@ -19,6 +20,8 @@ interface ApiStackProps extends cdk.StackProps {
   dynamoDBStack: DynamoDBStack;
   /** Secrets Manager secret name for JWT (e.g. sensor-api/jwt-secret)*/
   jwtSecretName: string;
+  /** SSM parameter name for CORS allowed origins (e.g. /sensor-api/allowed-origins) */
+  allowedOriginsParamName: string;
 }
 
 export class ApiStack extends cdk.Stack {
@@ -28,9 +31,14 @@ export class ApiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
-    const { dynamoDBStack, jwtSecretName } = props;
+    const { dynamoDBStack, jwtSecretName, allowedOriginsParamName } = props;
 
     const jwtSecretRef = secretsmanager.Secret.fromSecretNameV2(this, 'JwtSecret', jwtSecretName);
+    const allowedOriginsParam = ssm.StringParameter.fromStringParameterName(
+      this,
+      'AllowedOriginsParam',
+      allowedOriginsParamName
+    );
 
     const logGroup = new logs.LogGroup(this, 'ApiLogGroup', {
       retention: logs.RetentionDays.ONE_WEEK,
@@ -46,6 +54,7 @@ export class ApiStack extends cdk.Stack {
       memorySize: 512,
       environment: {
         JWT_SECRET_NAME: jwtSecretName,
+        ALLOWED_ORIGINS_PARAM_NAME: allowedOriginsParamName,
         NODE_ENV: 'production',
         USE_LOCAL_DB: 'false', // Always use AWS DynamoDB in deployed environment
       },
@@ -54,6 +63,7 @@ export class ApiStack extends cdk.Stack {
     });
 
     jwtSecretRef.grantRead(this.lambdaFunction);
+    allowedOriginsParam.grantRead(this.lambdaFunction);
 
     // Grant Lambda permissions to access DynamoDB tables
     dynamoDBStack.devicesTable.grantReadWriteData(this.lambdaFunction);

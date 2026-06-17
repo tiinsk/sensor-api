@@ -12,6 +12,14 @@ if (!jwtSecretName) {
   process.exit(1);
 }
 
+const allowedOriginsParamName =
+  app.node.tryGetContext('allowedOriginsParamName');
+
+if (!allowedOriginsParamName) {
+  console.error('\n❌ ERROR: allowedOriginsParamName is required.\n');
+  process.exit(1);
+}
+
 const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
   region: process.env.CDK_DEFAULT_REGION,
@@ -28,6 +36,7 @@ const apiStack = new ApiStack(app, 'SensorApiStack', {
   env,
   dynamoDBStack,
   jwtSecretName,
+  allowedOriginsParamName,
   description: 'Sensor API Lambda function and API Gateway',
 });
 

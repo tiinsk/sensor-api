@@ -45,7 +45,7 @@ Use an IAM user and access keys for the CLI. Do **not** use the root account for
     - `AmazonAPIGatewayAdministrator`
     - `IAMFullAccess`
     - `AmazonS3FullAccess` (CDK bootstrap assets bucket)
-    - `AmazonSSMFullAccess` (CDK bootstrap)
+    - `AmazonSSMFullAccess` (CDK bootstrap + `aws ssm put-parameter` for CORS origins)
     - `AmazonEC2ContainerRegistryFullAccess` (CDK asset publishing)
 5. Click "Next"
 6. Review and click "Create user"
@@ -114,20 +114,36 @@ To run the API locally with SAM: install [AWS SAM CLI](https://docs.aws.amazon.c
    Or create it in the AWS Console (Secrets Manager → Store a new secret → Other type of secret → Plaintext, paste a generated secret). Note the **secret name** (e.g. `sensor-api/jwt-secret`).
    **Save the secret value somewhere secure** (e.g. password manager) if you need it for the `create:user:prod` and `create:api-key:prod` scripts; the Lambda does not need it in its environment.
 
-3. **Bootstrap CDK (one-time per account and region).**  
+
+3. **Store the CORS allowed origins (SSM Parameter Store) (one-time).**  
+
+   Store your **production** Amplify dashboard URL only. Local dev does not need localhost entries here if you use the Vite proxy (see sensor-frontend README: leave `VITE_API_ROUTE` empty and set `VITE_API_PROXY_ROUTE` to this API’s URL — the browser talks to the dev server, not API Gateway, so CORS does not apply).
+
+   ```bash
+   aws ssm put-parameter \
+     --name /sensor-api/allowed-origins \
+     --value "https://main.xxxxx.amplifyapp.com" \
+     --type String \
+     --overwrite
+   ```
+
+   To update later, run the same command with a new value (no redeploy needed).
+
+
+4. **Bootstrap CDK (one-time per account and region).**  
    If you have not run CDK bootstrap in this account/region before, run once:
    ```bash
    cd cdk && cdk bootstrap --context jwtSecretName=sensor-api/jwt-secret
    ```
 
-4. **Deploy the stacks:**
+5. **Deploy the stacks:**
    ```bash
    npm run cdk:deploy
    ```
    The CDK uses the secret name `sensor-api/jwt-secret` (passed via the script in package.json). Approve IAM changes if prompted. The Lambda will receive the secret ARN and fetch the value from Secrets Manager at cold start.
 
 
-5. **Capture outputs**  
+6. **Capture outputs**  
    Note the API URL and table names (devices, readings, users, auth) from the CDK outputs. You need these for the production scripts and for any custom IAM policies.
 
 ---
@@ -297,7 +313,11 @@ aws dynamodb list-tables      # List DynamoDB tables
   Production deploy uses **AWS Secrets Manager** only: create the secret and pass its **name** to CDK (`--context jwtSecretName=sensor-api/jwt-secret`). The Lambda reads the value at runtime; the secret is never in Lambda env. Local development uses `JWT_SECRET` from `.env.local` (no CDK deploy).
 
 - **CORS**  
-  The API is deployed with CORS `allowOrigins: ['*']`. For production, restrict CORS to your front-end origin(s). See the README "TODO / Technical Debt" for the tracked improvement.
+  Allowed browser origins are stored in **SSM Parameter Store** (`/sensor-api/allowed-origins` by default). The Lambda loads them at cold start. API Gateway preflight stays permissive (`*`); the Lambda enforces the allowlist on responses. Set the value to your **Amplify app URL only**. Update with `aws ssm put-parameter ... --overwrite` — no redeploy required.
+
+  **Local dev against production API:** use the Vite proxy in sensor-frontend (`VITE_API_PROXY_ROUTE` → API Gateway URL, `VITE_API_ROUTE` empty). No localhost origins in SSM are needed. Only if you point the browser directly at API Gateway (`VITE_API_ROUTE` set) would you add your dev server origin to the SSM value — the proxy setup is preferred.
+
+  Local SAM defaults to `*` when neither `ALLOWED_ORIGINS` nor `ALLOWED_ORIGINS_PARAM_NAME` is set.
 
 - **Build before deploy**  
   Always run `npm run build` before `npm run cdk:deploy`, because the Lambda code is taken from `dist/src` (tsc output), not from the bundle.

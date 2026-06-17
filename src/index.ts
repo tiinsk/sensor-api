@@ -4,7 +4,10 @@
 
 import createAPI, { Request, Response } from 'lambda-api';
 import { APIGatewayProxyEvent, Context } from 'aws-lambda';
+import { ensureAllowedOriginsLoaded } from './lib/load-allowed-origins';
 import { ensureJwtSecretLoaded } from './lib/load-jwt-secret';
+import { getAllowedOrigins, resolveCorsOrigin } from './config/cors';
+import { ENV_VARS } from './config/env-schema';
 
 // Auth handlers
 import { extendSession, issueToken, login } from './handlers/auth';
@@ -52,7 +55,10 @@ const api = createAPI({
 // CORS middleware
 api.use((req: Request, res: Response, next: () => void) => {
   res.cors({
-    origin: '*',
+    origin: resolveCorsOrigin(
+      req.headers.origin as string | undefined,
+      getAllowedOrigins(process.env[ENV_VARS.ALLOWED_ORIGINS])
+    ),
     methods: 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     headers: 'Content-Type, Authorization',
   });
@@ -99,6 +105,6 @@ api.get('/api/devices/:id/statistics', requireAuth, getDeviceStatisticsHandler);
 
 // Export Lambda handler
 export const handler = async (event: APIGatewayProxyEvent, context: Context) => {
-  await ensureJwtSecretLoaded();
+  await Promise.all([ensureJwtSecretLoaded(), ensureAllowedOriginsLoaded()]);
   return await api.run(event, context);
 };
