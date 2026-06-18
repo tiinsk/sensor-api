@@ -39,6 +39,41 @@ interface Reading {
 }
 
 /**
+ * Fetch all readings for a device within a time range, paginating through DynamoDB results.
+ */
+export async function queryAllReadingsInRange(params: {
+  deviceId: string;
+  startTime: string;
+  endTime: string;
+}): Promise<Reading[]> {
+  const readings: Reading[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+  do {
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: TABLES.READINGS,
+        KeyConditionExpression: 'deviceId = :deviceId AND #timestamp BETWEEN :startTime AND :endTime',
+        ExpressionAttributeNames: {
+          '#timestamp': 'timestamp',
+        },
+        ExpressionAttributeValues: {
+          ':deviceId': params.deviceId,
+          ':startTime': params.startTime,
+          ':endTime': params.endTime,
+        },
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+
+    readings.push(...((result.Items || []) as Reading[]));
+    lastEvaluatedKey = result.LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return readings;
+}
+
+/**
  * Get readings for a specific device within time range
  */
 export async function getDeviceReadings(params: {
@@ -56,22 +91,11 @@ export async function getDeviceReadings(params: {
   }
 
   // Query readings in time range
-  const result = await docClient.send(
-    new QueryCommand({
-      TableName: TABLES.READINGS,
-      KeyConditionExpression: 'deviceId = :deviceId AND #ts BETWEEN :startTime AND :endTime',
-      ExpressionAttributeNames: {
-        '#ts': 'timestamp',
-      },
-      ExpressionAttributeValues: {
-        ':deviceId': params.deviceId,
-        ':startTime': params.startTime,
-        ':endTime': params.endTime,
-      },
-    })
-  );
-
-  const readings = (result.Items || []) as Reading[];
+  const readings = await queryAllReadingsInRange({
+    deviceId: params.deviceId,
+    startTime: params.startTime,
+    endTime: params.endTime,
+  });
 
   // Aggregate readings by time level and type
   // NOTE: In PostgreSQL this was done with date_trunc/date_bin and GROUP BY
@@ -110,24 +134,15 @@ export async function getAllReadings(params: {
 
   // Query readings for each device
   const readingsPromises = devicesResult.values.map(async (device) => {
-    const result = await docClient.send(
-      new QueryCommand({
-        TableName: TABLES.READINGS,
-        KeyConditionExpression: 'deviceId = :deviceId AND #ts BETWEEN :startTime AND :endTime',
-        ExpressionAttributeNames: {
-          '#ts': 'timestamp',
-        },
-        ExpressionAttributeValues: {
-          ':deviceId': device.id,
-          ':startTime': params.startTime,
-          ':endTime': params.endTime,
-        },
-      })
-    );
+    const readings = await queryAllReadingsInRange({
+      deviceId: device.id,
+      startTime: params.startTime,
+      endTime: params.endTime,
+    });
 
     return {
       deviceId: device.id,
-      readings: (result.Items || []) as Reading[],
+      readings,
     };
   });
 

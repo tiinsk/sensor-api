@@ -175,6 +175,21 @@ describe('GET /api/readings - Integration', () => {
       expect(buckets[1].timestamp).toContain('2026-01');
     });
 
+    it('should return all 12 month buckets for full year 2025 seed data', async () => {
+      const response = await fetch(
+        `${API_URL}/api/readings?startTime=${dateRanges.year2025.start.toISOString()}&endTime=${dateRanges.year2025.end.toISOString()}&type=temperature&level=month&limit=10&offset=0`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+
+      const data = (await response.json()) as ReadingsResponse;
+      const deviceReadings = data.values.find((d) => d.id === 'device-001');
+
+      expect(deviceReadings).toBeDefined();
+      expect(deviceReadings!.values).toHaveLength(12);
+    });
+
     it('should separate readings into correct week buckets', async () => {
       const deviceId = generateTestDeviceId();
 

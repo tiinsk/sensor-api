@@ -1,11 +1,7 @@
-import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { createDynamoDBClient } from '../lib/db-client';
 import { ArrayRequestParams, Reading } from '../types';
 import {getAllDevices, getDevice} from './devices';
-import { TABLES } from '../config/constants';
+import { queryAllReadingsInRange } from './readings';
 import { airQualityFromPm25Co2 } from '../utils/air-quality';
-
-const docClient = createDynamoDBClient();
 
 interface Statistics {
   temperature: {
@@ -106,47 +102,6 @@ function calculateStatistics(readings: Reading[]): Statistics {
 }
 
 /**
- * Fetch all readings for a device within a time range
- */
-async function getDeviceReadingsInRange(
-  client: DynamoDBDocumentClient,
-  deviceId: string,
-  startTime: string,
-  endTime: string
-): Promise<Reading[]> {
-  const readings: Reading[] = [];
-  let lastEvaluatedKey: any = undefined;
-
-  try {
-    do {
-      const result = await client.send(
-        new QueryCommand({
-          TableName: TABLES.READINGS,
-          KeyConditionExpression: 'deviceId = :deviceId AND #timestamp BETWEEN :startTime AND :endTime',
-          ExpressionAttributeNames: {
-            '#timestamp': 'timestamp',
-          },
-          ExpressionAttributeValues: {
-            ':deviceId': deviceId,
-            ':startTime': startTime,
-            ':endTime': endTime,
-          },
-          ExclusiveStartKey: lastEvaluatedKey,
-        })
-      );
-
-      readings.push(...((result.Items || []) as Reading[]));
-      lastEvaluatedKey = result.LastEvaluatedKey;
-    } while (lastEvaluatedKey);
-
-    return readings;
-  } catch (error) {
-    console.error(`Failed to get readings for device ${deviceId}:`, error);
-    throw error;
-  }
-}
-
-/**
  * Get statistics for all devices within a time range
  */
 export async function getAllStatistics(
@@ -164,12 +119,11 @@ export async function getAllStatistics(
     // Fetch readings and calculate statistics for each device in parallel
     const statisticsResults = await Promise.all(
       devicesResult.values.map(async (device): Promise<DeviceStatistics> => {
-        const readings = await getDeviceReadingsInRange(
-          docClient,
-          device.id,
+        const readings = (await queryAllReadingsInRange({
+          deviceId: device.id,
           startTime,
-          endTime
-        );
+          endTime,
+        })) as Reading[];
         const statistics = calculateStatistics(readings);
 
         return {
@@ -209,12 +163,11 @@ export async function getDeviceStatistics(params: {
 
   try {
     // Fetch all readings for this device in the time range
-    const readings = await getDeviceReadingsInRange(
-      docClient,
+    const readings = (await queryAllReadingsInRange({
       deviceId,
       startTime,
-      endTime
-    );
+      endTime,
+    })) as Reading[];
 
     const statistics = calculateStatistics(readings);
 
