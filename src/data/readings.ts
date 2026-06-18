@@ -6,37 +6,20 @@ import { QueryCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { getDevice } from './devices';
 import { TABLES } from '../config/constants';
+import {
+  AllReadingsResponse,
+  CreatedReadingResponse,
+  DeviceReadingsResponse,
+  SensorType,
+  TimedAvgMinMax,
+  TimeLevel,
+} from '../api-types';
+import { Reading } from '../db-types';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { airQualityFromPm25Co2 } from '../utils/air-quality';
+import { getAllDevices } from './devices';
 
 const docClient = createDynamoDBClient();
-
-export type ReadingType =
-  | 'temperature'
-  | 'humidity'
-  | 'pressure'
-  | 'lux'
-  | 'battery'
-  | 'pm25'
-  | 'co2'
-  | 'voc'
-  | 'nox'
-  | 'airQuality';
-export type TimeLevel = '30 minutes' | 'day' | 'week' | 'month';
-
-interface Reading {
-  deviceId: string;
-  timestamp: string;
-  temperature?: number;
-  humidity?: number;
-  pressure?: number;
-  lux?: number;
-  battery?: number;
-  pm25?: number;
-  co2?: number;
-  voc?: number;
-  nox?: number;
-}
 
 /**
  * Fetch all readings for a device within a time range, paginating through DynamoDB results.
@@ -80,15 +63,12 @@ export async function getDeviceReadings(params: {
   deviceId: string;
   startTime: string;
   endTime: string;
-  types: ReadingType[];
+  types: SensorType[];
   level: TimeLevel;
   timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to 'UTC'
-}) {
+}): Promise<DeviceReadingsResponse> {
   // Verify device exists
-  const device = await getDevice(params.deviceId);
-  if ('error' in device) {
-    return device;
-  }
+  await getDevice(params.deviceId);
 
   // Query readings in time range
   const readings = await queryAllReadingsInRange({
@@ -118,14 +98,12 @@ export async function getDeviceReadings(params: {
 export async function getAllReadings(params: {
   startTime: string;
   endTime: string;
-  type: ReadingType;
+  type: SensorType;
   level: TimeLevel;
   limit: number;
   offset: number;
   timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to 'UTC'
-}) {
-  // Get devices (reusing device pagination)
-  const { getAllDevices } = await import('./devices.js');
+}): Promise<AllReadingsResponse> {
   const devicesResult = await getAllDevices({
     limit: params.limit,
     offset: params.offset,
@@ -180,12 +158,9 @@ export async function addDeviceReading(params: {
     nox?: number;
     timestamp?: string;
   };
-}) {
+}): Promise<CreatedReadingResponse> {
   // Verify device exists
-  const device = await getDevice(params.id);
-  if ('error' in device) {
-    return device;
-  }
+  await getDevice(params.id);
 
   // Use provided timestamp or current time
   const timestamp = params.payload.timestamp || new Date().toISOString();
@@ -236,10 +211,10 @@ export async function addDeviceReading(params: {
  */
 function aggregateReadings(
   readings: Reading[],
-  type: ReadingType,
+  type: SensorType,
   level: TimeLevel,
   timezone: string
-): Array<{ timestamp: string; avg: number; min: number; max: number }> {
+): TimedAvgMinMax[] {
   if (readings.length === 0) return [];
 
   // Group readings by time bucket
@@ -250,7 +225,7 @@ function aggregateReadings(
       type === 'airQuality'
         ? airQualityFromPm25Co2(reading.pm25, reading.co2)
         : reading[type];
-    if (value === undefined || value === null) return;
+    if (value === undefined) return;
 
     const bucketKey = truncateTime(reading.timestamp, level, timezone);
     if (!buckets.has(bucketKey)) {

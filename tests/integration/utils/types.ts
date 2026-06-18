@@ -29,7 +29,7 @@ export interface DeleteResponse {
 }
 
 // --- Readings (GET /api/readings aggregated) ---
-export interface AggregatedReading {
+export interface TimedAvgMinMax {
   timestamp: string;
   avg: number;
   min: number;
@@ -38,7 +38,7 @@ export interface AggregatedReading {
 
 export interface DeviceReadings {
   id: string;
-  values: AggregatedReading[];
+  values: TimedAvgMinMax[];
 }
 
 export interface ReadingsResponse {
@@ -49,14 +49,14 @@ export interface ReadingsResponse {
 }
 
 // --- Device-specific readings (GET /api/devices/:id/readings) ---
-export interface TypeReadings {
+export interface SensorReadings {
   type: string;
-  values: AggregatedReading[];
+  values: TimedAvgMinMax[];
 }
 
 export interface DeviceReadingsResponse {
   id: string;
-  values: TypeReadings[];
+  values: SensorReadings[];
 }
 
 // --- Statistics ---
@@ -112,7 +112,7 @@ export interface LatestReading {
   co2?: number | null;
   voc?: number | null;
   nox?: number | null;
-  airQuality?: number | null;
+  airQuality?: number;
 }
 
 export interface LatestDevice {

@@ -7,7 +7,7 @@ import { getApiUrl } from './utils/test-config';
 import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
 import { getTestDateRanges } from '../utils/test-data';
-import type { AggregatedReading, TypeReadings, DeviceReadingsResponse } from './utils/types';
+import type { DeviceReadingsResponse } from './utils/types';
 
 describe('GET /api/devices/:id/readings - Integration', () => {
   const API_URL = getApiUrl();

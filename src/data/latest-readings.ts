@@ -1,6 +1,7 @@
 import {DynamoDBDocumentClient, GetCommand, ScanCommand} from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
-import { ArrayRequestParams, Device, Reading } from '../types';
+import { ArrayRequestParams, LatestReading } from '../api-types';
+import { Device, Reading } from '../db-types';
 import { NotFoundError } from '../lib/errors';
 import { TABLES } from '../config/constants';
 import { airQualityFromPm25Co2 } from '../utils/air-quality';
@@ -8,7 +9,7 @@ import { airQualityFromPm25Co2 } from '../utils/air-quality';
 const docClient = createDynamoDBClient();
 
 interface DeviceWithReading extends Device {
-  reading: Reading | null;
+  reading: LatestReading | null;
 }
 
 /**

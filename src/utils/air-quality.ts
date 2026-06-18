@@ -15,10 +15,10 @@ function clamp(x: number, lo: number, hi: number): number {
 }
 
 export function airQualityFromPm25Co2(
-  pm25: number | null | undefined,
-  co2: number | null | undefined
-): number | null {
-  if (pm25 == null || co2 == null) return null;
+  pm25: number | undefined,
+  co2: number | undefined
+): number | undefined {
+  if (pm25 === undefined || co2 === undefined) return undefined;
 
   const pm25Clamped = clamp(pm25, PM25_MIN, PM25_MAX);
   const co2Clamped = clamp(co2, CO2_MIN, CO2_MAX);
@@ -31,5 +31,5 @@ export function airQualityFromPm25Co2(
   const quality = Math.round(clamped * 100) / 100; // round to 2 decimals
 
 
-  return Number.isNaN(quality) ? null : quality;
+  return Number.isNaN(quality) ? undefined : quality;
 }

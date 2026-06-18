@@ -1,60 +1,18 @@
-import { ArrayRequestParams, Reading } from '../types';
+import {
+  AllStatisticsResponse,
+  ArrayRequestParams,
+  DeviceStatistics,
+  SensorStatistics,
+} from '../api-types';
+import { Reading } from '../db-types';
 import {getAllDevices, getDevice} from './devices';
 import { queryAllReadingsInRange } from './readings';
 import { airQualityFromPm25Co2 } from '../utils/air-quality';
 
-interface Statistics {
-  temperature: {
-    avg: number | null;
-    min: number | null;
-    max: number | null;
-  };
-  humidity: {
-    avg: number | null;
-    min: number | null;
-    max: number | null;
-  };
-  pressure: {
-    avg: number | null;
-    min: number | null;
-    max: number | null;
-  };
-  pm25: {
-    avg: number | null;
-    min: number | null;
-    max: number | null;
-  };
-  co2: {
-    avg: number | null;
-    min: number | null;
-    max: number | null;
-  };
-  voc: {
-    avg: number | null;
-    min: number | null;
-    max: number | null;
-  };
-  nox: {
-    avg: number | null;
-    min: number | null;
-    max: number | null;
-  };
-  airQuality: {
-    avg: number | null;
-    min: number | null;
-    max: number | null;
-  };
-}
-
-interface DeviceStatistics {
-  id: string;
-  statistics: Statistics;
-}
-
 /**
  * Calculate statistics (min, max, avg) for a set of readings
  */
-function calculateStatistics(readings: Reading[]): Statistics {
+function calculateStatistics(readings: Reading[]): SensorStatistics {
   if (readings.length === 0) {
     return {
       temperature: { avg: null, min: null, max: null },
@@ -68,17 +26,17 @@ function calculateStatistics(readings: Reading[]): Statistics {
     };
   }
 
-  // Filter out readings with null values for each metric
-  const temps = readings.filter(r => r.temperature !== null && r.temperature !== undefined).map(r => r.temperature!);
-  const humids = readings.filter(r => r.humidity !== null && r.humidity !== undefined).map(r => r.humidity!);
-  const pressures = readings.filter(r => r.pressure !== null && r.pressure !== undefined).map(r => r.pressure!);
-  const pm25Values = readings.filter(r => r.pm25 !== null && r.pm25 !== undefined).map(r => r.pm25!);
-  const co2Values = readings.filter(r => r.co2 !== null && r.co2 !== undefined).map(r => r.co2!);
-  const vocValues = readings.filter(r => r.voc !== null && r.voc !== undefined).map(r => r.voc!);
-  const noxValues = readings.filter(r => r.nox !== null && r.nox !== undefined).map(r => r.nox!);
+  // Filter out readings that do not include the metric.
+  const temps = readings.filter(r => r.temperature !== undefined).map(r => r.temperature!);
+  const humids = readings.filter(r => r.humidity !== undefined).map(r => r.humidity!);
+  const pressures = readings.filter(r => r.pressure !== undefined).map(r => r.pressure!);
+  const pm25Values = readings.filter(r => r.pm25 !== undefined).map(r => r.pm25!);
+  const co2Values = readings.filter(r => r.co2 !== undefined).map(r => r.co2!);
+  const vocValues = readings.filter(r => r.voc !== undefined).map(r => r.voc!);
+  const noxValues = readings.filter(r => r.nox !== undefined).map(r => r.nox!);
   const airQualityValues = readings
     .map((r) => airQualityFromPm25Co2(r.pm25, r.co2))
-    .filter((v): v is number => v !== null);
+    .filter((v): v is number => v !== undefined);
 
   const calcStats = (values: number[]) => {
     if (values.length === 0) return { avg: null, min: null, max: null };
@@ -109,7 +67,7 @@ export async function getAllStatistics(
     startTime: string;
     endTime: string;
   } & ArrayRequestParams
-) {
+): Promise<AllStatisticsResponse> {
   const { startTime, endTime, limit, offset } = params;
 
   try {
@@ -119,11 +77,11 @@ export async function getAllStatistics(
     // Fetch readings and calculate statistics for each device in parallel
     const statisticsResults = await Promise.all(
       devicesResult.values.map(async (device): Promise<DeviceStatistics> => {
-        const readings = (await queryAllReadingsInRange({
+        const readings = await queryAllReadingsInRange({
           deviceId: device.id,
           startTime,
           endTime,
-        })) as Reading[];
+        });
         const statistics = calculateStatistics(readings);
 
         return {
@@ -152,22 +110,19 @@ export async function getDeviceStatistics(params: {
   startTime: string;
   endTime: string;
   deviceId: string;
-}) {
+}): Promise<DeviceStatistics> {
   const { startTime, endTime, deviceId } = params;
 
   // Verify device exists
-  const device = await getDevice(params.deviceId);
-  if ('error' in device) {
-    return device;
-  }
+  await getDevice(params.deviceId);
 
   try {
     // Fetch all readings for this device in the time range
-    const readings = (await queryAllReadingsInRange({
+    const readings = await queryAllReadingsInRange({
       deviceId,
       startTime,
       endTime,
-    })) as Reading[];
+    });
 
     const statistics = calculateStatistics(readings);
 

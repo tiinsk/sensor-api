@@ -4,7 +4,8 @@
 
 import { ScanCommand, GetCommand, PutCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
-import type { Device, ArrayRequestParams } from '../types';
+import type { ArrayRequestParams } from '../api-types';
+import type { Device } from '../db-types';
 import { NotFoundError, ConflictError } from '../lib/errors';
 import { TABLES } from '../config/constants';
 

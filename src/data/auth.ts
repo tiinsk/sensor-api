@@ -5,7 +5,7 @@
 import { GetCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { TABLES } from '../config/constants';
-import { ApiKey } from '../types';
+import { ApiKey } from '../db-types';
 
 const docClient = createDynamoDBClient();
 

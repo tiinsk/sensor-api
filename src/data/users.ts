@@ -6,14 +6,9 @@ import { GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { createDynamoDBClient } from '../lib/db-client';
 import { TABLES } from '../config/constants';
 import { verifyPassword } from '../lib/password';
+import { User } from '../db-types';
 
 const docClient = createDynamoDBClient();
-
-export interface User {
-  username: string;
-  passwordHash: string;
-  disabled: boolean;
-}
 
 /**
  * Get a user by username
