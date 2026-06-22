@@ -48,7 +48,7 @@ async function run() {
 
     // --- Readings ---
     const readingRows = await client.query(`
-      SELECT id, temperature, humidity, pressure, lux, battery, device, created_at
+      SELECT id, temperature, humidity, pressure, battery, device, created_at
       FROM reading
       ORDER BY device, created_at ASC
     `);
@@ -64,7 +64,6 @@ async function run() {
         temperature: row.temperature != null ? Number(row.temperature) : undefined,
         humidity: row.humidity != null ? Number(row.humidity) : undefined,
         pressure: row.pressure != null ? Number(row.pressure) : undefined,
-        lux: row.lux != null ? Number(row.lux) : undefined,
         battery: row.battery != null ? Number(row.battery) : undefined,
       };
     });

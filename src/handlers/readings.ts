@@ -60,7 +60,6 @@ const AddReadingSchema = z
     temperature: z.number().optional(),
     humidity: z.number().optional(),
     pressure: z.number().optional(),
-    lux: z.number().optional(),
     battery: z.number().optional(),
     pm25: z.number().optional(),
     co2: z.number().optional(),

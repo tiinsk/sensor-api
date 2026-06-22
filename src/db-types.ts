@@ -25,7 +25,6 @@ export interface Reading {
   temperature?: number;
   humidity?: number;
   pressure?: number;
-  lux?: number;
   battery?: number;
   pm25?: number;
   co2?: number;
@@ -51,7 +50,6 @@ export interface ReadingRollup {
   temperature?: ReadingRollupStats;
   humidity?: ReadingRollupStats;
   pressure?: ReadingRollupStats;
-  lux?: ReadingRollupStats;
   battery?: ReadingRollupStats;
   pm25?: ReadingRollupStats;
   co2?: ReadingRollupStats;

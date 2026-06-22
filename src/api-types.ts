@@ -9,7 +9,6 @@ export const readingSensorFields = [
   'temperature',
   'humidity',
   'pressure',
-  'lux',
   'battery',
   'pm25',
   'co2',

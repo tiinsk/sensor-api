@@ -151,7 +151,6 @@ export async function addDeviceReading(params: {
     temperature?: number;
     humidity?: number;
     pressure?: number;
-    lux?: number;
     battery?: number;
     pm25?: number;
     co2?: number;
@@ -172,7 +171,6 @@ export async function addDeviceReading(params: {
     temperature: params.payload.temperature,
     humidity: params.payload.humidity,
     pressure: params.payload.pressure,
-    lux: params.payload.lux,
     battery: params.payload.battery,
     pm25: params.payload.pm25,
     co2: params.payload.co2,
