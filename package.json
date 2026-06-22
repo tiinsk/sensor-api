@@ -15,6 +15,7 @@
     "dynamodb:stop": "docker compose down",
     "tables:create": "dotenv -c -- node_modules/.bin/ts-node scripts/create-tables-local.ts",
     "seed:local": "dotenv -c -- node_modules/.bin/ts-node scripts/seed-local.ts",
+    "seed:test": "dotenv -c -- node_modules/.bin/ts-node scripts/seed-test.ts",
     "sam:env": "dotenv -c -- node_modules/.bin/ts-node scripts/generate-sam-env.ts",
     "create:user": "dotenv -c -- node_modules/.bin/ts-node scripts/create-user.ts",
     "create:api-key": "dotenv -c -- node_modules/.bin/ts-node scripts/create-api-key.ts",

@@ -272,7 +272,7 @@ sensor-api/
 │   └── lib/                # Utilities
 ├── scripts/                # Setup scripts
 │   ├── create-tables-local.ts
-│   └── seed-local.ts
+│   └── seed.ts
 └── docker-compose.yml      # DynamoDB Local
 ```
 

@@ -56,9 +56,9 @@ async function setupIntegrationTables() {
 
   console.log('\n🌱 Seeding test data...\n');
 
-  // Seed data using existing seed-local script (NODE_ENV=test already set)
+  // Seed data using existing seed-test script (NODE_ENV=test already set)
   try {
-    execSync('npm run seed:local', {
+    execSync('npm run seed:test', {
       env: { ...process.env, NODE_ENV: 'test' },
       stdio: 'inherit',
     });

@@ -4,8 +4,8 @@
  * IMPORTANT: All timestamps use FIXED_NOW reference date
  */
 
-// If this is changed, seed-local.ts should probably be changed also
-// so that seed data contains some data from that timeframe
+// Fixed reference date.
+// Tests will mock Date.now() to always return this date
 export const FIXED_NOW = new Date('2026-02-12T10:00:00Z');
 
 export const TEST_USER = {
