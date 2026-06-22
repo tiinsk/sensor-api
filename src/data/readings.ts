@@ -18,6 +18,7 @@ import { Reading } from '../db-types';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { airQualityFromPm25Co2 } from '../utils/air-quality';
 import { getAllDevices } from './devices';
+import { updateReadingRollups } from './reading-rollups';
 
 const docClient = createDynamoDBClient();
 
@@ -160,7 +161,7 @@ export async function addDeviceReading(params: {
   };
 }): Promise<CreatedReadingResponse> {
   // Verify device exists
-  await getDevice(params.id);
+  const device = await getDevice(params.id);
 
   // Use provided timestamp or current time
   const timestamp = params.payload.timestamp || new Date().toISOString();
@@ -198,6 +199,8 @@ export async function addDeviceReading(params: {
       },
     })
   );
+
+  await updateReadingRollups(reading, device.timezone);
 
   return {
     ...reading,

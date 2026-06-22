@@ -5,17 +5,22 @@ export interface ArrayRequestParams {
   offset: number;
 }
 
-export type SensorType =
-  | 'temperature'
-  | 'humidity'
-  | 'pressure'
-  | 'lux'
-  | 'battery'
-  | 'pm25'
-  | 'co2'
-  | 'voc'
-  | 'nox'
-  | 'airQuality';
+export const readingSensorFields = [
+  'temperature',
+  'humidity',
+  'pressure',
+  'lux',
+  'battery',
+  'pm25',
+  'co2',
+  'voc',
+  'nox',
+] as const;
+
+export const sensorTypes = [...readingSensorFields, 'airQuality'] as const;
+
+export type ReadingSensorField = typeof readingSensorFields[number];
+export type SensorType = typeof sensorTypes[number];
 
 export type TimeLevel = '30 minutes' | 'day' | 'week' | 'month';
 

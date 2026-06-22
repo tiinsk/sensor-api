@@ -6,6 +6,7 @@ import { Request, Response } from 'lambda-api';
 import { z } from 'zod';
 import { getDeviceReadings, getAllReadings, addDeviceReading } from '../data/readings';
 import { isHttpError } from '../lib/errors';
+import { sensorTypes } from '../api-types';
 
 const GetDeviceReadingsSchema = z
   .object({
@@ -15,19 +16,7 @@ const GetDeviceReadingsSchema = z
       .string()
       .transform((str) => str.split(',').map((t) => t.trim()))
       .pipe(
-        z.array(
-          z.enum([
-            'temperature',
-            'humidity',
-            'pressure',
-            'battery',
-            'pm25',
-            'co2',
-            'voc',
-            'nox',
-            'airQuality',
-          ])
-        )
+        z.array(z.enum(sensorTypes))
       ),
     level: z.enum(['30 minutes', 'day', 'week', 'month']),
     timezone: z.string().optional(),
@@ -48,17 +37,7 @@ const GetAllReadingsSchema = z
   .object({
     startTime: z.string().datetime(),
     endTime: z.string().datetime(),
-    type: z.enum([
-      'temperature',
-      'humidity',
-      'pressure',
-      'battery',
-      'pm25',
-      'co2',
-      'voc',
-      'nox',
-      'airQuality',
-    ]),
+    type: z.enum(sensorTypes),
     level: z.enum(['30 minutes', 'day', 'week', 'month']),
     limit: z.coerce.number().int().min(1).max(100).default(100),
     offset: z.coerce.number().int().min(0).default(0),
@@ -81,6 +60,7 @@ const AddReadingSchema = z
     temperature: z.number().optional(),
     humidity: z.number().optional(),
     pressure: z.number().optional(),
+    lux: z.number().optional(),
     battery: z.number().optional(),
     pm25: z.number().optional(),
     co2: z.number().optional(),

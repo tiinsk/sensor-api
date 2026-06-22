@@ -33,6 +33,33 @@ export interface Reading {
   nox?: number;
 }
 
+export type ReadingRollupLevel = '30m' | 'day';
+
+export interface ReadingRollupStats {
+  avg: number;
+  min: number;
+  max: number;
+  count: number;
+}
+
+export interface ReadingRollup {
+  deviceId: string;
+  bucketKey: string; // `${level}#${bucketStart}`
+  level: ReadingRollupLevel;
+  bucketStart: string;
+  timezone: string;
+  temperature?: ReadingRollupStats;
+  humidity?: ReadingRollupStats;
+  pressure?: ReadingRollupStats;
+  lux?: ReadingRollupStats;
+  battery?: ReadingRollupStats;
+  pm25?: ReadingRollupStats;
+  co2?: ReadingRollupStats;
+  voc?: ReadingRollupStats;
+  nox?: ReadingRollupStats;
+  airQuality?: ReadingRollupStats;
+}
+
 export interface User {
   username: string;
   passwordHash: string;
