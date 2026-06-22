@@ -8,6 +8,7 @@
  * This creates tables with TEST- prefix (NODE_ENV=test automatically adds prefix):
  *   - TEST-SensorApi-Devices
  *   - TEST-SensorApi-Readings
+ *   - TEST-SensorApi-ReadingRollups
  *   - TEST-SensorApi-Users
  *   - TEST-SensorApi-Auth
  */
@@ -15,7 +16,6 @@
 import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb';
 import { tableSchemas } from '../src/config/table-schemas';
 import { toCreateTableInput } from '../src/config/table-mappers';
-import { TABLES } from '../src/config/constants';
 import { execSync } from 'child_process';
 
 const client = new DynamoDBClient({
@@ -30,24 +30,16 @@ const client = new DynamoDBClient({
 async function setupIntegrationTables() {
   console.log('🏗️  Creating integration test tables...\n');
 
-  // Create tables by iterating over TABLES constant
-  for (const [constantKey, tableName] of Object.entries(TABLES)) {
-    // Convert TABLES key (e.g., 'DEVICES') to schema key (e.g., 'devices')
-    const schemaKey = constantKey.toLowerCase() as keyof typeof tableSchemas;
-    const schema = tableSchemas[schemaKey];
-
+  // Create tables from the shared schemas. The schema table names already include
+  // the TEST- prefix when NODE_ENV=test.
+  for (const schema of Object.values(tableSchemas)) {
     try {
       const createTableInput = toCreateTableInput(schema);
-      await client.send(
-        new CreateTableCommand({
-          ...createTableInput,
-          TableName: tableName,
-        })
-      );
-      console.log(`✓ Created table: ${tableName}`);
+      await client.send(new CreateTableCommand(createTableInput));
+      console.log(`✓ Created table: ${schema.tableName}`);
     } catch (error: any) {
       if (error.name === 'ResourceInUseException') {
-        console.log(`✓ Table already exists: ${tableName}`);
+        console.log(`✓ Table already exists: ${schema.tableName}`);
       } else {
         throw error;
       }

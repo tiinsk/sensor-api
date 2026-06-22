@@ -6,6 +6,7 @@ import { Request, Response } from 'lambda-api';
 import { z } from 'zod';
 import { getAllDevices, getDevice, addDevice, updateDevice, deleteDevice } from '../data/devices';
 import { isHttpError } from '../lib/errors';
+import { DEFAULT_DEVICE_TIMEZONE } from '../config/constants';
 
 const GetAllDevicesSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(100),
@@ -23,6 +24,7 @@ const AddDeviceSchema = z.object({
     y: z.number(),
     type: z.enum(['inside', 'outside']).nullable(),
   }),
+  timezone: z.string().default(DEFAULT_DEVICE_TIMEZONE),
   disabled: z.boolean().default(true),
   sensorInfo: z.string().optional(),
 });
@@ -36,6 +38,7 @@ const UpdateDeviceSchema = z.object({
     y: z.number(),
     type: z.enum(['inside', 'outside']).nullable(),
   }),
+  timezone: z.string().optional(),
   disabled: z.boolean(),
   sensorInfo: z.string().optional(), // Optional field
 });

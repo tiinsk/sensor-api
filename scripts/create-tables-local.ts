@@ -30,6 +30,7 @@ async function createTables() {
   // Create all tables from shared config
   await createTable('Devices', toCreateTableInput(tableSchemas.devices));
   await createTable('Readings', toCreateTableInput(tableSchemas.readings));
+  await createTable('ReadingRollups', toCreateTableInput(tableSchemas.readingRollups));
   await createTable('Users', toCreateTableInput(tableSchemas.users));
   await createTable('Auth', toCreateTableInput(tableSchemas.auth));
 

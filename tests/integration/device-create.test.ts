@@ -55,6 +55,7 @@ describe('POST /api/devices - Integration', () => {
       expect(data.type).toBe('ruuvi');
       expect(data.disabled).toBe(false);
       expect(data.order).toBe(100);
+      expect(data.timezone).toBe('Europe/Helsinki');
 
       createdDeviceIds.push(testDeviceId);
     });

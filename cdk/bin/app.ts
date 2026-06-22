@@ -25,7 +25,7 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION,
 };
 
-// DynamoDB Stack (4 tables)
+// DynamoDB Stack (5 tables)
 const dynamoDBStack = new DynamoDBStack(app, 'SensorApiDynamoDBStack', {
   env,
   description: 'DynamoDB tables for Sensor API',

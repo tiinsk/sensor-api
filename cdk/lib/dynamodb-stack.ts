@@ -7,6 +7,7 @@ import { toCdkTableProps, toCdkGsiProps } from '../../src/config/table-mappers';
 export class DynamoDBStack extends cdk.Stack {
   public readonly devicesTable: dynamodb.Table;
   public readonly readingsTable: dynamodb.Table;
+  public readonly readingRollupsTable: dynamodb.Table;
   public readonly usersTable: dynamodb.Table;
   public readonly authTable: dynamodb.Table;
 
@@ -31,6 +32,14 @@ export class DynamoDBStack extends cdk.Stack {
     const readingsProps = toCdkTableProps(tableSchemas.readings);
     this.readingsTable = new dynamodb.Table(this, 'ReadingsTable', {
       ...readingsProps,
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Reading Rollups Table
+    const readingRollupsProps = toCdkTableProps(tableSchemas.readingRollups);
+    this.readingRollupsTable = new dynamodb.Table(this, 'ReadingRollupsTable', {
+      ...readingRollupsProps,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
@@ -62,6 +71,12 @@ export class DynamoDBStack extends cdk.Stack {
       value: this.readingsTable.tableName,
       description: 'Readings table name',
       exportName: 'SensorApi-ReadingsTableName',
+    });
+
+    new cdk.CfnOutput(this, 'ReadingRollupsTableName', {
+      value: this.readingRollupsTable.tableName,
+      description: 'Reading rollups table name',
+      exportName: 'SensorApi-ReadingRollupsTableName',
     });
 
     new cdk.CfnOutput(this, 'UsersTableName', {

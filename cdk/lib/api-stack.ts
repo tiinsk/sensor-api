@@ -68,6 +68,7 @@ export class ApiStack extends cdk.Stack {
     // Grant Lambda permissions to access DynamoDB tables
     dynamoDBStack.devicesTable.grantReadWriteData(this.lambdaFunction);
     dynamoDBStack.readingsTable.grantReadWriteData(this.lambdaFunction);
+    dynamoDBStack.readingRollupsTable.grantReadWriteData(this.lambdaFunction);
     dynamoDBStack.usersTable.grantReadData(this.lambdaFunction);
     dynamoDBStack.authTable.grantReadData(this.lambdaFunction);
 
@@ -139,6 +140,11 @@ export class ApiStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ReadingsTableName', {
       value: dynamoDBStack.readingsTable.tableName,
       description: 'Readings DynamoDB table name',
+    });
+
+    new cdk.CfnOutput(this, 'ReadingRollupsTableName', {
+      value: dynamoDBStack.readingRollupsTable.tableName,
+      description: 'Reading rollups DynamoDB table name',
     });
 
     new cdk.CfnOutput(this, 'AuthTableName', {

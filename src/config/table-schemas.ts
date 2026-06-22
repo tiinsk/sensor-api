@@ -57,6 +57,16 @@ export const tableSchemas = {
     ],
   },
 
+  readingRollups: {
+    tableName: TABLES.READING_ROLLUPS,
+    partitionKey: { name: 'deviceId', type: 'S' },
+    sortKey: { name: 'bucketKey', type: 'S' },
+    attributes: [
+      { name: 'deviceId', type: 'S' },
+      { name: 'bucketKey', type: 'S' },
+    ],
+  },
+
   users: {
     tableName: TABLES.USERS,
     partitionKey: { name: 'username', type: 'S' },

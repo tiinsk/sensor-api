@@ -160,6 +160,7 @@ describe('GET /api/devices - Integration', () => {
         disabled: false,
         order: 1,
         latestReadingId: "2026-02-12T09:30:00.000Z",
+        timezone: 'Europe/Helsinki',
       });
 
       // Verify device-002 properties (Balcony Sensor)
@@ -175,7 +176,8 @@ describe('GET /api/devices - Integration', () => {
         type: 'ruuvi',
         disabled: false,
         order: 2,
-        latestReadingId: "2026-02-12T09:30:00.000Z"
+        latestReadingId: "2026-02-12T09:30:00.000Z",
+        timezone: 'Europe/Helsinki',
       });
     });
   });

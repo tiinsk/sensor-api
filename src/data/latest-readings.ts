@@ -83,6 +83,7 @@ export async function getAllLatestReadings(params: ArrayRequestParams) {
           order: device.order,
           type: device.type,
           location: device.location,
+          timezone: device.timezone,
           disabled: device.disabled,
           reading: reading ? {
             temperature: reading.temperature,
@@ -149,6 +150,7 @@ export async function getDeviceLatestReading(deviceId: string) {
       order: device.order,
       type: device.type,
       location: device.location,
+      timezone: device.timezone,
       disabled: device.disabled,
       reading: reading ? {
         temperature: reading.temperature,

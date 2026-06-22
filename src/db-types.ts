@@ -13,6 +13,7 @@ export interface Device {
   name: string;
   type: DeviceType;
   location: DeviceLocation;
+  timezone: string;
   disabled: boolean;
   sensorInfo?: string;
   latestReadingId?: string; // Timestamp of the most recent reading

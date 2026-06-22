@@ -22,6 +22,9 @@ function getTableName(baseName: string): string {
 export const TABLES = {
   DEVICES: getTableName('SensorApi-Devices'),
   READINGS: getTableName('SensorApi-Readings'),
+  READING_ROLLUPS: getTableName('SensorApi-ReadingRollups'),
   USERS: getTableName('SensorApi-Users'),
   AUTH: getTableName('SensorApi-Auth'),
 } as const;
+
+export const DEFAULT_DEVICE_TIMEZONE = 'Europe/Helsinki';
