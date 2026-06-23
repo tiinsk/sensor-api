@@ -88,26 +88,6 @@ const GetAllReadingsSchema = z.union([
     .refine(isValidDateRange, dateRangeError),
 ]);
 
-type ParsedReadingRangeQuery =
-  | { level: '30 minutes'; startTime: string; endTime: string }
-  | { level: 'day' | 'week' | 'month'; startDate: string; endDate: string };
-
-const toLegacyTimeRange = (
-  query: ParsedReadingRangeQuery
-): { startTime: string; endTime: string } => {
-  if (query.level === '30 minutes') {
-    return {
-      startTime: query.startTime,
-      endTime: query.endTime,
-    };
-  }
-
-  return {
-    startTime: `${query.startDate}T00:00:00.000Z`,
-    endTime: `${query.endDate}T23:59:59.999Z`,
-  };
-};
-
 const AddReadingSchema = z
   .object({
     temperature: z.number().optional(),
@@ -147,15 +127,10 @@ export async function getDeviceReadingsHandler(req: Request, res: Response) {
     // Parse and validate query parameters
     const query = GetDeviceReadingsSchema.parse(req.query);
 
-    //TODO: remove this next
-    const range = toLegacyTimeRange(query);
-
     const result = await getDeviceReadings({
       deviceId,
-      startTime: range.startTime,
-      endTime: range.endTime,
+      ...query,
       types: query.types,
-      level: query.level,
     });
 
     return res.json(result);
@@ -180,14 +155,9 @@ export async function getAllReadingsHandler(req: Request, res: Response) {
     // Parse query parameters
     const query = GetAllReadingsSchema.parse(req.query);
 
-    //TODO: remove this next
-    const range = toLegacyTimeRange(query);
-
     const result = await getAllReadings({
-      startTime: range.startTime,
-      endTime: range.endTime,
+      ...query,
       type: query.type,
-      level: query.level,
       limit: query.limit,
       offset: query.offset,
     });

@@ -10,6 +10,7 @@ import {
   AllReadingsResponse,
   CreatedReadingResponse,
   DeviceReadingsResponse,
+  ReadingRange,
   SensorType,
   TimedAvgMinMax,
   TimeLevel,
@@ -62,23 +63,15 @@ export async function queryAllReadingsInRange(params: {
  */
 export async function getDeviceReadings(params: {
   deviceId: string;
-  startTime: string;
-  endTime: string;
   types: SensorType[];
-  level: TimeLevel;
-  timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to device timezone
-}): Promise<DeviceReadingsResponse> {
+} & ReadingRange): Promise<DeviceReadingsResponse> {
   // Verify device exists
   const device = await getDevice(params.deviceId);
 
-  const timezone = params.timezone || device.timezone;
   const aggregatedByType = await queryAggregatedRollupsByType({
-    deviceId: params.deviceId,
-    startTime: params.startTime,
-    endTime: params.endTime,
+    ...params,
     types: params.types,
-    level: params.level,
-    timezone,
+    timezone: device.timezone,
   });
 
   return {
@@ -91,14 +84,10 @@ export async function getDeviceReadings(params: {
  * Get readings for all devices
  */
 export async function getAllReadings(params: {
-  startTime: string;
-  endTime: string;
   type: SensorType;
-  level: TimeLevel;
   limit: number;
   offset: number;
-  timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to each device timezone
-}): Promise<AllReadingsResponse> {
+} & ReadingRange): Promise<AllReadingsResponse> {
   const devicesResult = await getAllDevices({
     limit: params.limit,
     offset: params.offset,
@@ -106,14 +95,11 @@ export async function getAllReadings(params: {
   });
 
   const readingsPromises = devicesResult.values.map(async (device) => {
-    const timezone = params.timezone || device.timezone;
     const values = await queryAggregatedRollups({
       deviceId: device.id,
-      startTime: params.startTime,
-      endTime: params.endTime,
+      ...params,
       type: params.type,
-      level: params.level,
-      timezone,
+      timezone: device.timezone,
     });
 
     return {

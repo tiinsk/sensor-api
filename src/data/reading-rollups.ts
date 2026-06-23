@@ -4,7 +4,7 @@ import { sensorTypes } from '../api-types';
 import { TABLES } from '../config/constants';
 import { createDynamoDBClient } from '../lib/db-client';
 import { airQualityFromPm25Co2 } from '../utils/air-quality';
-import type { SensorReadings, SensorType, TimedAvgMinMax, TimeLevel } from '../api-types';
+import type { ReadingRange, SensorReadings, SensorType, TimedAvgMinMax, TimeLevel } from '../api-types';
 import type {
   Reading,
   ReadingRollup,
@@ -227,14 +227,9 @@ export const aggregateRollups = (
 
 export const queryAggregatedRollups = async (params: {
   deviceId: string;
-  startTime?: string;
-  endTime?: string;
-  startDate?: string;
-  endDate?: string;
   type: SensorType;
-  level: TimeLevel;
   timezone: string;
-}): Promise<TimedAvgMinMax[]> => {
+} & ReadingRange): Promise<TimedAvgMinMax[]> => {
   const isTimeRange = params.level === '30 minutes';
   const rollups = await queryRollupsInRange({
     deviceId: params.deviceId,
@@ -247,14 +242,9 @@ export const queryAggregatedRollups = async (params: {
 
 export const queryAggregatedRollupsByType = async (params: {
   deviceId: string;
-  startTime?: string;
-  endTime?: string;
-  startDate?: string;
-  endDate?: string;
   types: SensorType[];
-  level: TimeLevel;
   timezone: string;
-}): Promise<SensorReadings[]> => {
+} & ReadingRange): Promise<SensorReadings[]> => {
   const isTimeRange = params.level === '30 minutes';
   const rollups = await queryRollupsInRange({
     deviceId: params.deviceId,

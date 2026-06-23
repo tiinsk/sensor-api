@@ -22,6 +22,19 @@ export type ReadingSensorField = typeof readingSensorFields[number];
 export type SensorType = typeof sensorTypes[number];
 
 export type TimeLevel = '30 minutes' | 'day' | 'week' | 'month';
+export type DateLevel = Exclude<TimeLevel, '30 minutes'>;
+
+export type ReadingRange =
+  | {
+      level: '30 minutes';
+      startTime: string;
+      endTime: string;
+    }
+  | {
+      level: DateLevel;
+      startDate: string;
+      endDate: string;
+    };
 
 export interface TimedAvgMinMax {
   timestamp: string;
