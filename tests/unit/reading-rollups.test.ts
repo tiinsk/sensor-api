@@ -20,8 +20,8 @@ describe('reading rollups', () => {
   it('uses device timezone for day buckets', () => {
     // 2026-06-21T21:30Z is 2026-06-22 00:30 in Europe/Helsinki.
     expect(
-      getRollupBucketStart('2026-06-21T21:30:00.000Z', 'day', 'Europe/Helsinki')
-    ).toBe('2026-06-21T21:00:00.000Z');
+      getRollupBucketKey('2026-06-21T21:30:00.000Z', 'day', 'Europe/Helsinki')
+    ).toBe('day#2026-06-22');
   });
 
   it('merges avg/min/max/count incrementally', () => {
@@ -41,25 +41,25 @@ describe('reading rollups', () => {
     const rollups: ReadingRollup[] = [
       {
         deviceId: 'device-001',
-        bucketKey: 'day#2026-06-01T00:00:00.000Z',
+        bucketKey: 'day#2026-06-01',
         level: 'day',
-        bucketStart: '2026-06-01T00:00:00.000Z',
+        bucketStart: '2026-06-01',
         timezone: 'UTC',
         temperature: { avg: 10, min: 8, max: 12, count: 2 },
       },
       {
         deviceId: 'device-001',
-        bucketKey: 'day#2026-06-02T00:00:00.000Z',
+        bucketKey: 'day#2026-06-02',
         level: 'day',
-        bucketStart: '2026-06-02T00:00:00.000Z',
+        bucketStart: '2026-06-02',
         timezone: 'UTC',
         temperature: { avg: 20, min: 18, max: 22, count: 1 },
       },
     ];
 
-    expect(aggregateRollups(rollups, 'temperature', 'month', 'UTC')).toEqual([
+    expect(aggregateRollups(rollups, 'temperature', 'month')).toEqual([
       {
-        timestamp: '2026-06-01T00:00:00.000Z',
+        timestamp: '2026-06-01',
         avg: 13.3333,
         min: 8,
         max: 22,

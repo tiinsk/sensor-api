@@ -1,5 +1,5 @@
 import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 import { sensorTypes } from '../api-types';
 import { TABLES } from '../config/constants';
 import { createDynamoDBClient } from '../lib/db-client';
@@ -25,27 +25,35 @@ const roundRollupStats = (stats: ReadingRollupStats): ReadingRollupStats => ({
   count: stats.count,
 });
 
+export const getDayBucketStart = (timestamp: string, timezone: string): string => {
+  return formatInTimeZone(new Date(timestamp), timezone, 'yyyy-MM-dd');
+};
+
+export const getThirtyMinuteBucketStart = (
+  timestamp: string,
+  timezone: string
+): string => {
+  const zonedDate = toZonedTime(new Date(timestamp), timezone);
+  zonedDate.setMinutes(Math.floor(zonedDate.getMinutes() / 30) * 30, 0, 0);
+  return fromZonedTime(zonedDate, timezone).toISOString();
+};
+
 export const getRollupBucketStart = (
   timestamp: string,
   level: ReadingRollupLevel,
   timezone: string
-): string => {
-  const zonedDate = toZonedTime(new Date(timestamp), timezone);
-
-  if (level === '30m') {
-    zonedDate.setMinutes(Math.floor(zonedDate.getMinutes() / 30) * 30, 0, 0);
-  } else {
-    zonedDate.setHours(0, 0, 0, 0);
-  }
-
-  return fromZonedTime(zonedDate, timezone).toISOString();
-};
+): string =>
+  level === 'day'
+    ? getDayBucketStart(timestamp, timezone)
+    : getThirtyMinuteBucketStart(timestamp, timezone);
 
 export const getRollupBucketKey = (
   timestamp: string,
   level: ReadingRollupLevel,
   timezone: string
-): string => `${level}#${getRollupBucketStart(timestamp, level, timezone)}`;
+): string => {
+  return `${level}#${getRollupBucketStart(timestamp, level, timezone)}`;
+};
 
 export const mergeRollupStats = (
   existing: ReadingRollupStats | undefined,
@@ -76,8 +84,8 @@ const updateReadingRollup = async (
   level: ReadingRollupLevel,
   timezone: string
 ): Promise<void> => {
+  const bucketKey = getRollupBucketKey(reading.timestamp, level, timezone);
   const bucketStart = getRollupBucketStart(reading.timestamp, level, timezone);
-  const bucketKey = `${level}#${bucketStart}`;
 
   const existingResult = await docClient.send(
     new GetCommand({
@@ -137,35 +145,28 @@ export const updateReadingRollups = async (
   );
 };
 
-const getSourceRollupLevel = (level: TimeLevel): ReadingRollupLevel =>
-  level === '30 minutes' ? '30m' : 'day';
+const getWeekStartDate = (date: string): string => {
+  const utcDate = new Date(`${date}T00:00:00.000Z`);
+  const dayOfWeek = utcDate.getUTCDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  utcDate.setUTCDate(utcDate.getUTCDate() - daysToMonday);
+  return utcDate.toISOString().slice(0, 10);
+};
 
-const truncateRollupTime = (timestamp: string, level: TimeLevel, timezone: string): string => {
-  if (level === '30 minutes') return getRollupBucketStart(timestamp, '30m', timezone);
-  if (level === 'day') return getRollupBucketStart(timestamp, 'day', timezone);
+const getMonthStartDate = (date: string): string => `${date.slice(0, 7)}-01`;
 
-  const zonedDate = toZonedTime(new Date(timestamp), timezone);
+const truncateRollupTime = (rollup: ReadingRollup, level: TimeLevel): string => {
+  if (level === '30 minutes') return rollup.bucketStart;
+  if (level === 'day') return rollup.bucketStart;
+  if (level === 'week') return getWeekStartDate(rollup.bucketStart);
 
-  // Convert any date inside a week/month to that bucket's local start date.
-  // getDay() returns Sunday as 0, Monday as 1, etc. For week buckets we subtract
-  // the number of days since Monday, with Sunday treated as 6 days after Monday.
-  if (level === 'week') {
-    const dayOfWeek = zonedDate.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    zonedDate.setDate(zonedDate.getDate() - daysToMonday);
-  } else {
-    zonedDate.setDate(1);
-  }
-
-  zonedDate.setHours(0, 0, 0, 0);
-  return fromZonedTime(zonedDate, timezone).toISOString();
+  return getMonthStartDate(rollup.bucketStart);
 };
 
 const queryRollupsInRange = async (params: {
   deviceId: string;
-  startTime: string;
-  endTime: string;
-  sourceLevel: ReadingRollupLevel;
+  startKey: string;
+  endKey: string;
 }): Promise<ReadingRollup[]> => {
   const rollups: ReadingRollup[] = [];
   let lastEvaluatedKey: Record<string, unknown> | undefined;
@@ -177,8 +178,8 @@ const queryRollupsInRange = async (params: {
         KeyConditionExpression: 'deviceId = :deviceId AND bucketKey BETWEEN :startKey AND :endKey',
         ExpressionAttributeValues: {
           ':deviceId': params.deviceId,
-          ':startKey': `${params.sourceLevel}#${params.startTime}`,
-          ':endKey': `${params.sourceLevel}#${params.endTime}`,
+          ':startKey': params.startKey,
+          ':endKey': params.endKey,
         },
         ExclusiveStartKey: lastEvaluatedKey,
       })
@@ -199,8 +200,7 @@ const getRollupSensorStats = (
 export const aggregateRollups = (
   rollups: ReadingRollup[],
   type: SensorType,
-  level: TimeLevel,
-  timezone: string
+  level: TimeLevel
 ): TimedAvgMinMax[] => {
   // Query results are stored as 30-minute or daily rows. When the API asks for
   // week/month values, multiple stored rows belong to one graph bucket, so merge
@@ -209,7 +209,7 @@ export const aggregateRollups = (
     const stats = getRollupSensorStats(rollup, type);
     if (!stats) return acc;
 
-    const timestamp = truncateRollupTime(rollup.bucketStart, level, timezone);
+    const timestamp = truncateRollupTime(rollup, level);
     acc.set(timestamp, mergeRollupStats(acc.get(timestamp), stats));
 
     return acc;
@@ -227,41 +227,43 @@ export const aggregateRollups = (
 
 export const queryAggregatedRollups = async (params: {
   deviceId: string;
-  startTime: string;
-  endTime: string;
+  startTime?: string;
+  endTime?: string;
+  startDate?: string;
+  endDate?: string;
   type: SensorType;
   level: TimeLevel;
   timezone: string;
 }): Promise<TimedAvgMinMax[]> => {
-  const sourceLevel = getSourceRollupLevel(params.level);
+  const isTimeRange = params.level === '30 minutes';
   const rollups = await queryRollupsInRange({
     deviceId: params.deviceId,
-    startTime: params.startTime,
-    endTime: params.endTime,
-    sourceLevel,
+    startKey: isTimeRange ? `30m#${params.startTime}` : `day#${params.startDate}`,
+    endKey: isTimeRange ? `30m#${params.endTime}` : `day#${params.endDate}`,
   });
 
-  return aggregateRollups(rollups, params.type, params.level, params.timezone);
+  return aggregateRollups(rollups, params.type, params.level);
 };
 
 export const queryAggregatedRollupsByType = async (params: {
   deviceId: string;
-  startTime: string;
-  endTime: string;
+  startTime?: string;
+  endTime?: string;
+  startDate?: string;
+  endDate?: string;
   types: SensorType[];
   level: TimeLevel;
   timezone: string;
 }): Promise<SensorReadings[]> => {
-  const sourceLevel = getSourceRollupLevel(params.level);
+  const isTimeRange = params.level === '30 minutes';
   const rollups = await queryRollupsInRange({
     deviceId: params.deviceId,
-    startTime: params.startTime,
-    endTime: params.endTime,
-    sourceLevel,
+    startKey: isTimeRange ? `30m#${params.startTime}` : `day#${params.startDate}`,
+    endKey: isTimeRange ? `30m#${params.endTime}` : `day#${params.endDate}`,
   });
 
   return params.types.map((type) => ({
     type,
-    values: aggregateRollups(rollups, type, params.level, params.timezone),
+    values: aggregateRollups(rollups, type, params.level),
   }));
 };
