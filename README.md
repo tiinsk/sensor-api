@@ -294,6 +294,39 @@ All endpoints require authentication (JWT token in `Authorization: Bearer <token
 - `GET /api/readings` - Get readings for all devices
 - `POST /api/devices/:id/readings` - Add new reading
 
+#### Reading Time Buckets and Timezones
+
+Reading timestamps are stored in UTC, but graph buckets are calculated in a timezone.
+This affects `level=day`, `level=week`, and `level=month` because local day/week/month
+boundaries are not always the same as UTC boundaries.
+
+Read endpoints use two different range formats:
+
+- `level=30 minutes` uses `startTime` and `endTime` ISO UTC datetimes.
+- `level=day`, `level=week`, and `level=month` use `startDate` and `endDate`
+  calendar dates in `YYYY-MM-DD` format.
+
+For rollup-backed date reads, the device timezone is the canonical bucket timezone.
+Day rollups are written using the device's timezone, so query-time timezone overrides
+are not supported.
+
+For date-based reads, the returned `timestamp` is a date string:
+
+- `day`: the local date, e.g. `2025-01-14`.
+- `week`: the Monday date for the 7-day bucket, e.g. `2025-01-13`.
+- `month`: the first date of the month, e.g. `2025-01-01`.
+
+For 30-minute reads, the returned `timestamp` remains an ISO UTC timestamp for the
+30-minute bucket start.
+
+Examples:
+
+```text
+GET /api/readings?level=30%20minutes&type=temperature&startTime=2025-01-14T00:00:00.000Z&endTime=2025-01-14T23:59:59.999Z
+GET /api/readings?level=day&type=temperature&startDate=2025-01-14&endDate=2025-01-14
+GET /api/readings?level=month&type=temperature&startDate=2025-01-01&endDate=2025-12-31
+```
+
 ### Latest Readings
 - `GET /api/latest` - Get latest readings for all devices
 - `GET /api/devices/:id/latest` - Get latest reading for a device

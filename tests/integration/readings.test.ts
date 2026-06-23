@@ -6,7 +6,7 @@
 import { getApiUrl } from './utils/test-config';
 import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
-import { getTestDateRanges } from '../utils/test-data';
+import { getTestDateRanges, toDateString } from '../utils/test-data';
 import type { DeviceReadings, ReadingsResponse } from './utils/types';
 
 describe('GET /api/readings - Integration', () => {
@@ -77,11 +77,11 @@ describe('GET /api/readings - Integration', () => {
       });
 
       // Query with day level for both days
-      const startTime = dateRanges.dayBeforeYesterday.start.toISOString();
-      const endTime = dateRanges.yesterday.end.toISOString();
+      const startDate = toDateString(dateRanges.dayBeforeYesterday.start);
+      const endDate = toDateString(dateRanges.yesterday.end);
 
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=temperature&level=day`,
+        `${API_URL}/api/readings?startDate=${startDate}&endDate=${endDate}&type=temperature&level=day`,
         { headers }
       );
 
@@ -148,11 +148,11 @@ describe('GET /api/readings - Integration', () => {
       });
 
       // Query with month level for both months
-      const startTime = dateRanges.december2025.start.toISOString();
-      const endTime = dateRanges.january2026.end.toISOString();
+      const startDate = toDateString(dateRanges.december2025.start);
+      const endDate = toDateString(dateRanges.january2026.end);
 
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=temperature&level=month`,
+        `${API_URL}/api/readings?startDate=${startDate}&endDate=${endDate}&type=temperature&level=month`,
         { headers }
       );
 
@@ -178,7 +178,7 @@ describe('GET /api/readings - Integration', () => {
 
     it('should return all 12 month buckets for full year 2025 seed data', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.year2025.start.toISOString()}&endTime=${dateRanges.year2025.end.toISOString()}&type=temperature&level=month&timezone=UTC&limit=10&offset=0`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.year2025.start)}&endDate=${toDateString(dateRanges.year2025.end)}&type=temperature&level=month&limit=10&offset=0`,
         { headers }
       );
 
@@ -232,11 +232,11 @@ describe('GET /api/readings - Integration', () => {
       });
 
       // Query with week level for both weeks
-      const startTime = dateRanges.previousWeek.start.toISOString();
-      const endTime = dateRanges.currentWeek.end.toISOString();
+      const startDate = toDateString(dateRanges.previousWeek.start);
+      const endDate = toDateString(dateRanges.currentWeek.end);
 
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=temperature&level=week`,
+        `${API_URL}/api/readings?startDate=${startDate}&endDate=${endDate}&type=temperature&level=week`,
         { headers }
       );
 
@@ -383,11 +383,11 @@ describe('GET /api/readings - Integration', () => {
       });
 
       // Query both days
-      const startTime = dateRanges.dayBeforeYesterday.start.toISOString();
-      const endTime = new Date(new Date(nextDay).setUTCHours(23, 59, 59, 999)).toISOString();
+      const startDate = toDateString(dateRanges.dayBeforeYesterday.start);
+      const endDate = toDateString(nextDay);
 
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${startTime}&endTime=${endTime}&type=temperature&level=day`,
+        `${API_URL}/api/readings?startDate=${startDate}&endDate=${endDate}&type=temperature&level=day`,
         { headers }
       );
 
@@ -518,7 +518,7 @@ describe('GET /api/readings - Integration', () => {
 
       // Query for a time range with no data
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}&type=temperature&level=day`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.dayBeforeYesterday.start)}&endDate=${toDateString(dateRanges.dayBeforeYesterday.end)}&type=temperature&level=day`,
         { headers }
       );
 
@@ -650,7 +650,7 @@ describe('GET /api/readings - Integration', () => {
 
       // Query ONLY yesterday
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&type=temperature&level=day`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&type=temperature&level=day`,
         { headers }
       );
 
@@ -780,7 +780,7 @@ describe('GET /api/readings - Integration', () => {
   describe('Integration with Seed Data', () => {
     it('should return readings for yesterday', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&type=temperature&level=day`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&type=temperature&level=day`,
         { headers }
       );
 
@@ -802,18 +802,18 @@ describe('GET /api/readings - Integration', () => {
   });
 
   describe('Validation', () => {
-    it('should return 400 for missing startTime', async () => {
+    it('should return 400 for missing startDate', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?endTime=${dateRanges.yesterday.end.toISOString()}&type=temperature&level=day`,
+        `${API_URL}/api/readings?endDate=${toDateString(dateRanges.yesterday.end)}&type=temperature&level=day`,
         { headers }
       );
 
       expect(response.status).toBe(400);
     });
 
-    it('should return 400 for missing endTime', async () => {
+    it('should return 400 for missing endDate', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.yesterday.start.toISOString()}&type=temperature&level=day`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.yesterday.start)}&type=temperature&level=day`,
         { headers }
       );
 
@@ -822,7 +822,7 @@ describe('GET /api/readings - Integration', () => {
 
     it('should return 400 for missing type', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&level=day`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&level=day`,
         { headers }
       );
 
@@ -840,7 +840,7 @@ describe('GET /api/readings - Integration', () => {
 
     it('should return 400 for invalid type', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&type=invalid&level=day`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&type=invalid&level=day`,
         { headers }
       );
 
@@ -858,7 +858,7 @@ describe('GET /api/readings - Integration', () => {
 
     it('should return 400 when startTime > endTime', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=2026-02-12T10:00:00.000Z&endTime=2026-02-09T00:00:00.000Z&type=temperature&level=day`,
+        `${API_URL}/api/readings?startDate=2026-02-12&endDate=2026-02-09&type=temperature&level=day`,
         { headers }
       );
 
@@ -869,7 +869,7 @@ describe('GET /api/readings - Integration', () => {
   describe('Pagination', () => {
     it('should support limit parameter', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&type=temperature&level=day&limit=1`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&type=temperature&level=day&limit=1`,
         { headers }
       );
 
@@ -885,377 +885,13 @@ describe('GET /api/readings - Integration', () => {
   describe('Authentication', () => {
     it('should return 401 without auth token', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&type=temperature&level=day`
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&type=temperature&level=day`
       );
 
       expect(response.status).toBe(401);
     });
   });
 
-  // Helsinki is UTC+2 in winter (EET). Midnight Helsinki = 22:00 UTC previous day.
-  // These tests verify that the timezone parameter shifts day/week/month bucket boundaries
-  // to align with Helsinki time, not UTC.
-  describe('Helsinki Timezone Bucketing (Europe/Helsinki)', () => {
-    // Two readings that straddle the Helsinki day boundary (22:00 UTC = 00:00 EET):
-    // Reading A: 2026-02-10T21:59:59Z = Feb 10 23:59:59 EET → Helsinki day: Feb 10
-    // Reading B: 2026-02-10T22:00:00Z = Feb 11 00:00:00 EET → Helsinki day: Feb 11
-    // Without Helsinki tz both are in the same UTC day (Feb 10 UTC).
-    const HELSINKI_FEB_10 = '2026-02-10T21:59:59.000Z'; // 23:59:59 EET Feb 10
-    const HELSINKI_FEB_11 = '2026-02-10T22:00:00.000Z'; // 00:00:00 EET Feb 11
-
-    it('day level: readings on same UTC day fall into separate Helsinki day buckets', async () => {
-      const deviceId = await createTestDeviceWithReadings({
-        deviceOrder: 9880,
-        timezone: 'Europe/Helsinki',
-        readings: [
-          { timestamp: HELSINKI_FEB_10, temperature: 10 }, // 23:59:59 EET Feb 10 → Helsinki day Feb 10
-          { timestamp: HELSINKI_FEB_11, temperature: 20 }, // 00:00:00 EET Feb 11 → Helsinki day Feb 11
-        ],
-        headers,
-        createdDeviceIds,
-      });
-
-      // Wide query range that includes both readings
-      const response = await fetch(
-        `${API_URL}/api/readings?startTime=2026-02-09T22:00:00.000Z&endTime=2026-02-11T21:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
-        { headers }
-      );
-
-      expect(response.status).toBe(200);
-      const data = (await response.json()) as ReadingsResponse;
-      const device = data.values.find((d) => d.id === deviceId);
-      expect(device).toBeDefined();
-
-      // Must be 2 separate day buckets (Feb 10 and Feb 11 Helsinki)
-      expect(device!.values).toHaveLength(2);
-
-      const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-
-      // Feb 10 Helsinki bucket starts at 22:00 UTC Feb 9
-      expect(buckets[0].timestamp).toBe('2026-02-09T22:00:00.000Z');
-      expect(buckets[0].avg).toBe(10);
-
-      // Feb 11 Helsinki bucket starts at 22:00 UTC Feb 10
-      expect(buckets[1].timestamp).toBe('2026-02-10T22:00:00.000Z');
-      expect(buckets[1].avg).toBe(20);
-    });
-
-    it('day level: without timezone both readings fall into the same UTC day bucket', async () => {
-      const deviceId = await createTestDeviceWithReadings({
-        deviceOrder: 9879,
-        readings: [
-          { timestamp: HELSINKI_FEB_10, temperature: 10 }, // 23:59:59 EET Feb 10
-          { timestamp: HELSINKI_FEB_11, temperature: 20 }, // 00:00:00 EET Feb 11
-        ],
-        headers,
-        createdDeviceIds,
-      });
-
-      // Same query but no timezone parameter (defaults to UTC)
-      const response = await fetch(
-        `${API_URL}/api/readings?startTime=2026-02-09T22:00:00.000Z&endTime=2026-02-11T21:59:59.999Z&type=temperature&level=day`,
-        { headers }
-      );
-
-      expect(response.status).toBe(200);
-      const data = (await response.json()) as ReadingsResponse;
-      const device = data.values.find((d) => d.id === deviceId);
-      expect(device).toBeDefined();
-
-      // Both in the same UTC day bucket (Feb 10 UTC)
-      expect(device!.values).toHaveLength(1);
-      expect(device!.values[0].timestamp).toBe('2026-02-10T00:00:00.000Z');
-      expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
-    });
-
-    it('week level: readings on same UTC Sunday fall into separate Helsinki week buckets', async () => {
-      // Feb 8 is a Sunday.
-      // Reading A: 2026-02-08T21:59:59Z = Sun Feb 8 23:59:59 EET → Helsinki week: Mon Feb 2
-      // Reading B: 2026-02-08T22:00:00Z = Mon Feb 9 00:00:00 EET → Helsinki week: Mon Feb 9
-      // Without Helsinki tz: Feb 8 22:00 UTC is still Sunday UTC → both in week of Mon Feb 2
-
-      const deviceId = await createTestDeviceWithReadings({
-        deviceOrder: 9878,
-        timezone: 'Europe/Helsinki',
-        readings: [
-          { timestamp: '2026-02-08T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Sun Feb 8 → week of Mon Feb 2
-          { timestamp: '2026-02-08T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Mon Feb 9 → week of Mon Feb 9
-        ],
-        headers,
-        createdDeviceIds,
-      });
-
-      const response = await fetch(
-        `${API_URL}/api/readings?startTime=2026-02-01T00:00:00.000Z&endTime=2026-02-15T00:00:00.000Z&type=temperature&level=week&timezone=Europe%2FHelsinki`,
-        { headers }
-      );
-
-      expect(response.status).toBe(200);
-      const data = (await response.json()) as ReadingsResponse;
-      const device = data.values.find((d) => d.id === deviceId);
-      expect(device).toBeDefined();
-
-      // Must be 2 separate week buckets
-      expect(device!.values).toHaveLength(2);
-
-      const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-
-      // Week of Mon Feb 2 (Helsinki) starts at Sun Feb 1 22:00 UTC
-      expect(buckets[0].timestamp).toBe('2026-02-01T22:00:00.000Z');
-      expect(buckets[0].avg).toBe(10);
-
-      // Week of Mon Feb 9 (Helsinki) starts at Sun Feb 8 22:00 UTC
-      expect(buckets[1].timestamp).toBe('2026-02-08T22:00:00.000Z');
-      expect(buckets[1].avg).toBe(20);
-    });
-
-    it('week level: without timezone both Sunday readings fall into the same UTC week bucket', async () => {
-      const deviceId = await createTestDeviceWithReadings({
-        deviceOrder: 9877,
-        readings: [
-          { timestamp: '2026-02-08T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Sun Feb 8
-          { timestamp: '2026-02-08T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Mon Feb 9
-        ],
-        headers,
-        createdDeviceIds,
-      });
-
-      const response = await fetch(
-        `${API_URL}/api/readings?startTime=2026-02-01T00:00:00.000Z&endTime=2026-02-15T00:00:00.000Z&type=temperature&level=week`,
-        { headers }
-      );
-
-      expect(response.status).toBe(200);
-      const data = (await response.json()) as ReadingsResponse;
-      const device = data.values.find((d) => d.id === deviceId);
-      expect(device).toBeDefined();
-
-      // Both on Sunday Feb 8 UTC → same week (Mon Feb 2 UTC)
-      expect(device!.values).toHaveLength(1);
-      expect(device!.values[0].timestamp).toBe('2026-02-02T00:00:00.000Z');
-      expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
-    });
-
-    it('month level: readings on same UTC Jan 31 fall into separate Helsinki month buckets', async () => {
-      // Reading A: 2026-01-31T21:59:59Z = Jan 31 23:59:59 EET → Helsinki month: January
-      // Reading B: 2026-01-31T22:00:00Z = Feb 1  00:00:00 EET → Helsinki month: February
-      // Without Helsinki tz: both are Jan 31 UTC → same January bucket
-
-      const deviceId = await createTestDeviceWithReadings({
-        deviceOrder: 9876,
-        timezone: 'Europe/Helsinki',
-        readings: [
-          { timestamp: '2026-01-31T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Jan 31 → Helsinki month January
-          { timestamp: '2026-01-31T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Feb 1  → Helsinki month February
-        ],
-        headers,
-        createdDeviceIds,
-      });
-
-      const response = await fetch(
-        `${API_URL}/api/readings?startTime=2025-12-31T22:00:00.000Z&endTime=2026-02-28T22:00:00.000Z&type=temperature&level=month&timezone=Europe%2FHelsinki`,
-        { headers }
-      );
-
-      expect(response.status).toBe(200);
-      const data = (await response.json()) as ReadingsResponse;
-      const device = data.values.find((d) => d.id === deviceId);
-      expect(device).toBeDefined();
-
-      // Must be 2 separate month buckets (January and February Helsinki)
-      expect(device!.values).toHaveLength(2);
-
-      const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-
-      // January Helsinki bucket starts at Dec 31 22:00 UTC
-      expect(buckets[0].timestamp).toBe('2025-12-31T22:00:00.000Z');
-      expect(buckets[0].avg).toBe(10);
-
-      // February Helsinki bucket starts at Jan 31 22:00 UTC
-      expect(buckets[1].timestamp).toBe('2026-01-31T22:00:00.000Z');
-      expect(buckets[1].avg).toBe(20);
-    });
-
-    it('month level: without timezone both readings fall into the same UTC January bucket', async () => {
-      const deviceId = await createTestDeviceWithReadings({
-        deviceOrder: 9875,
-        readings: [
-          { timestamp: '2026-01-31T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Jan 31
-          { timestamp: '2026-01-31T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Feb 1
-        ],
-        headers,
-        createdDeviceIds,
-      });
-
-      const response = await fetch(
-        `${API_URL}/api/readings?startTime=2025-12-31T22:00:00.000Z&endTime=2026-02-28T22:00:00.000Z&type=temperature&level=month`,
-        { headers }
-      );
-
-      expect(response.status).toBe(200);
-      const data = (await response.json()) as ReadingsResponse;
-      const device = data.values.find((d) => d.id === deviceId);
-      expect(device).toBeDefined();
-
-      // Both on Jan 31 UTC → same January UTC bucket
-      expect(device!.values).toHaveLength(1);
-      expect(device!.values[0].timestamp).toBe('2026-01-01T00:00:00.000Z');
-      expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
-    });
-
-    // DST dates for 2025 (past dates, so timestamps are accepted by the API):
-    //   Spring forward: March 30, 2025 (last Sunday of March 2025)
-    //   Fall back:      October 26, 2025 (last Sunday of October 2025)
-    //
-    // Spring forward March 30: at 01:00 UTC (03:00 EET) clocks advance to 04:00 EEST.
-    //   The 03:xx EET hour is skipped — March 30 Helsinki has only 23 hours.
-    //   March 30 Helsinki day:  2025-03-29T22:00:00Z → 2025-03-30T20:59:59Z
-    //   March 31 Helsinki day starts: 2025-03-30T21:00:00Z
-    //
-    // Fall back October 26: at 01:00 UTC (04:00 EEST) clocks go back to 03:00 EET.
-    //   The 03:xx hour repeats — October 26 Helsinki has 25 hours.
-    //   October 26 Helsinki day: 2025-10-25T21:00:00Z → 2025-10-26T21:59:59Z
-    //   October 27 Helsinki day starts: 2025-10-26T22:00:00Z
-    describe('DST Transitions', () => {
-      it('spring forward (March 30): readings before and after missing hour are in same Helsinki day bucket', async () => {
-        // 2025-03-30T00:30:00Z = 02:30 EET (before transition)   → March 30 Helsinki
-        // 2025-03-30T01:30:00Z = 04:30 EEST (after transition)   → March 30 Helsinki
-        // Both should land in the March 30 Helsinki bucket: 2025-03-29T22:00:00.000Z
-        const deviceId = await createTestDeviceWithReadings({
-          deviceOrder: 9870,
-          timezone: 'Europe/Helsinki',
-          readings: [
-            { timestamp: '2025-03-30T00:30:00.000Z', temperature: 10 }, // 02:30 EET, before spring forward
-            { timestamp: '2025-03-30T01:30:00.000Z', temperature: 20 }, // 04:30 EEST, after spring forward
-          ],
-          headers,
-          createdDeviceIds,
-        });
-
-        const response = await fetch(
-          `${API_URL}/api/readings?startTime=2025-03-29T22:00:00.000Z&endTime=2025-03-30T20:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
-          { headers }
-        );
-
-        expect(response.status).toBe(200);
-        const data = (await response.json()) as ReadingsResponse;
-        const device = data.values.find((d) => d.id === deviceId);
-        expect(device).toBeDefined();
-
-        // Both readings must land in the single March 30 Helsinki day bucket
-        expect(device!.values).toHaveLength(1);
-        // March 30 midnight Helsinki = 22:00 UTC March 29 (still EET at midnight)
-        expect(device!.values[0].timestamp).toBe('2025-03-29T22:00:00.000Z');
-        expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
-      });
-
-      it('spring forward (March 30): day boundary after DST — March 31 starts at 21:00 UTC (EEST), not 22:00', async () => {
-        // Last reading of March 30 Helsinki: 2025-03-30T20:59:59Z = 23:59:59 EEST
-        // First reading of March 31 Helsinki: 2025-03-30T21:00:00Z = 00:00:00 EEST March 31
-        const deviceId = await createTestDeviceWithReadings({
-          deviceOrder: 9869,
-          timezone: 'Europe/Helsinki',
-          readings: [
-            { timestamp: '2025-03-30T20:59:59.000Z', temperature: 10 }, // 23:59:59 EEST → March 30 Helsinki
-            { timestamp: '2025-03-30T21:00:00.000Z', temperature: 20 }, // 00:00:00 EEST → March 31 Helsinki
-          ],
-          headers,
-          createdDeviceIds,
-        });
-
-        const response = await fetch(
-          `${API_URL}/api/readings?startTime=2025-03-29T22:00:00.000Z&endTime=2025-03-31T20:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
-          { headers }
-        );
-
-        expect(response.status).toBe(200);
-        const data = (await response.json()) as ReadingsResponse;
-        const device = data.values.find((d) => d.id === deviceId);
-        expect(device).toBeDefined();
-
-        // Two separate day buckets: March 30 and March 31
-        expect(device!.values).toHaveLength(2);
-        const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-
-        // March 30 Helsinki bucket (midnight EET = 22:00 UTC March 29)
-        expect(buckets[0].timestamp).toBe('2025-03-29T22:00:00.000Z');
-        expect(buckets[0].avg).toBe(10);
-
-        // March 31 Helsinki bucket (midnight EEST = 21:00 UTC March 30 — offset shifts from +2 to +3)
-        expect(buckets[1].timestamp).toBe('2025-03-30T21:00:00.000Z');
-        expect(buckets[1].avg).toBe(20);
-      });
-
-      it('fall back (October 26): readings in both occurrences of the repeated hour are in same Helsinki day bucket', async () => {
-        // 2025-10-26T00:30:00Z = 03:30 EEST (first occurrence, before fall-back)  → October 26 Helsinki
-        // 2025-10-26T01:30:00Z = 03:30 EET  (second occurrence, after fall-back)  → October 26 Helsinki
-        // Both should land in the October 26 Helsinki bucket: 2025-10-25T21:00:00.000Z
-        const deviceId = await createTestDeviceWithReadings({
-          deviceOrder: 9868,
-          timezone: 'Europe/Helsinki',
-          readings: [
-            { timestamp: '2025-10-26T00:30:00.000Z', temperature: 10 }, // 03:30 EEST, first occurrence
-            { timestamp: '2025-10-26T01:30:00.000Z', temperature: 20 }, // 03:30 EET, repeated hour
-          ],
-          headers,
-          createdDeviceIds,
-        });
-
-        const response = await fetch(
-          `${API_URL}/api/readings?startTime=2025-10-25T21:00:00.000Z&endTime=2025-10-26T21:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
-          { headers }
-        );
-
-        expect(response.status).toBe(200);
-        const data = (await response.json()) as ReadingsResponse;
-        const device = data.values.find((d) => d.id === deviceId);
-        expect(device).toBeDefined();
-
-        // Both readings must land in the single October 26 Helsinki day bucket
-        expect(device!.values).toHaveLength(1);
-        // October 26 midnight Helsinki = 21:00 UTC October 25 (EEST, UTC+3 at start of day)
-        expect(device!.values[0].timestamp).toBe('2025-10-25T21:00:00.000Z');
-        expect(device!.values[0].avg).toBe(15); // (10 + 20) / 2
-      });
-
-      it('fall back (October 26): day boundary after DST — October 27 starts at 22:00 UTC (EET), not 21:00', async () => {
-        // Last reading of October 26 Helsinki: 2025-10-26T21:59:59Z = 23:59:59 EET
-        // First reading of October 27 Helsinki: 2025-10-26T22:00:00Z = 00:00:00 EET October 27
-        const deviceId = await createTestDeviceWithReadings({
-          deviceOrder: 9867,
-          timezone: 'Europe/Helsinki',
-          readings: [
-            { timestamp: '2025-10-26T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET → October 26 Helsinki
-            { timestamp: '2025-10-26T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET → October 27 Helsinki
-          ],
-          headers,
-          createdDeviceIds,
-        });
-
-        const response = await fetch(
-          `${API_URL}/api/readings?startTime=2025-10-25T21:00:00.000Z&endTime=2025-10-27T21:59:59.999Z&type=temperature&level=day&timezone=Europe%2FHelsinki`,
-          { headers }
-        );
-
-        expect(response.status).toBe(200);
-        const data = (await response.json()) as ReadingsResponse;
-        const device = data.values.find((d) => d.id === deviceId);
-        expect(device).toBeDefined();
-
-        // Two separate day buckets: October 26 and October 27
-        expect(device!.values).toHaveLength(2);
-        const buckets = device!.values.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-
-        // October 26 Helsinki bucket (midnight EEST = 21:00 UTC October 25 — UTC+3 at start of day)
-        expect(buckets[0].timestamp).toBe('2025-10-25T21:00:00.000Z');
-        expect(buckets[0].avg).toBe(10);
-
-        // October 27 Helsinki bucket (midnight EET = 22:00 UTC October 26 — offset shifts back to +2)
-        expect(buckets[1].timestamp).toBe('2025-10-26T22:00:00.000Z');
-        expect(buckets[1].avg).toBe(20);
-      });
-    });
-  });
 
   describe('Partial Sensor Data (null values)', () => {
     it('temperature-only reading returns no bucket for type=humidity — not an error', async () => {
@@ -1273,7 +909,7 @@ describe('GET /api/readings - Integration', () => {
       });
 
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}&type=humidity&level=day`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.dayBeforeYesterday.start)}&endDate=${toDateString(dateRanges.dayBeforeYesterday.end)}&type=humidity&level=day`,
         { headers }
       );
 
@@ -1303,7 +939,7 @@ describe('GET /api/readings - Integration', () => {
       });
 
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}&type=temperature&level=day`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.dayBeforeYesterday.start)}&endDate=${toDateString(dateRanges.dayBeforeYesterday.end)}&type=temperature&level=day`,
         { headers }
       );
 

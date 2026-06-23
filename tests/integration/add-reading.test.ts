@@ -6,7 +6,7 @@
 import { getApiUrl } from './utils/test-config';
 import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
-import { getTestDateRanges } from '../utils/test-data';
+import { getTestDateRanges, toDateString } from '../utils/test-data';
 import type { PostedReading } from './utils/types';
 import { airQualityFromPm25Co2 } from '../../src/utils/air-quality';
 
@@ -240,7 +240,7 @@ describe('POST /api/devices/:id/readings - Integration', () => {
       // --- 3. GET /api/readings ---
       // The reading should appear in the day bucket for yesterday
       const readingsResponse = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&type=temperature&level=day`,
+        `${API_URL}/api/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&type=temperature&level=day`,
         { headers }
       );
       expect(readingsResponse.status).toBe(200);
@@ -356,7 +356,7 @@ describe('POST /api/devices/:id/readings - Integration', () => {
       expect(latest.reading.airQuality).toBe(expectedAirQuality);
 
       const readingsResponse = await fetch(
-        `${API_URL}/api/devices/${deviceId}/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=co2,airQuality&level=day`,
+        `${API_URL}/api/devices/${deviceId}/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&types=co2,airQuality&level=day`,
         { headers }
       );
       expect(readingsResponse.status).toBe(200);

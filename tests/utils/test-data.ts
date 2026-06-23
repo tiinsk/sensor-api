@@ -15,6 +15,8 @@ export const TEST_USER = {
 
 export const TEST_API_KEY = 'test-api-key-12345';
 
+export const toDateString = (date: Date): string => date.toISOString().slice(0, 10);
+
 /**
  * Calculate date ranges relative to FIXED_NOW for testing
  * All dates are explicitly in UTC to ensure consistency across timezones

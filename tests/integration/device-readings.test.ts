@@ -6,7 +6,7 @@
 import { getApiUrl } from './utils/test-config';
 import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { generateTestDeviceId, deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
-import { getTestDateRanges } from '../utils/test-data';
+import { getTestDateRanges, toDateString } from '../utils/test-data';
 import type { DeviceReadingsResponse } from './utils/types';
 
 describe('GET /api/devices/:id/readings - Integration', () => {
@@ -43,7 +43,7 @@ describe('GET /api/devices/:id/readings - Integration', () => {
       // Query for all three types
       const types = 'temperature,humidity,pressure';
       const response = await fetch(
-        `${API_URL}/api/devices/${deviceId}/readings?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}&types=${types}&level=day`,
+        `${API_URL}/api/devices/${deviceId}/readings?startDate=${toDateString(dateRanges.dayBeforeYesterday.start)}&endDate=${toDateString(dateRanges.dayBeforeYesterday.end)}&types=${types}&level=day`,
         { headers }
       );
 
@@ -176,11 +176,11 @@ describe('GET /api/devices/:id/readings - Integration', () => {
         createdDeviceIds,
       });
 
-      const startTime = dateRanges.dayBeforeYesterday.start.toISOString();
-      const endTime = dateRanges.yesterday.end.toISOString();
+      const startDate = toDateString(dateRanges.dayBeforeYesterday.start);
+      const endDate = toDateString(dateRanges.yesterday.end);
 
       const response = await fetch(
-        `${API_URL}/api/devices/${deviceId}/readings?startTime=${startTime}&endTime=${endTime}&types=temperature&level=day`,
+        `${API_URL}/api/devices/${deviceId}/readings?startDate=${startDate}&endDate=${endDate}&types=temperature&level=day`,
         { headers }
       );
 
@@ -205,7 +205,7 @@ describe('GET /api/devices/:id/readings - Integration', () => {
       const deviceId = 'device-001';
 
       const response = await fetch(
-        `${API_URL}/api/devices/${deviceId}/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature,humidity&level=day`,
+        `${API_URL}/api/devices/${deviceId}/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&types=temperature,humidity&level=day`,
         { headers }
       );
 
@@ -233,7 +233,7 @@ describe('GET /api/devices/:id/readings - Integration', () => {
   describe('Validation', () => {
     it('should return 404 for non-existent device', async () => {
       const response = await fetch(
-        `${API_URL}/api/devices/nonexistent/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature&level=day`,
+        `${API_URL}/api/devices/nonexistent/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&types=temperature&level=day`,
         { headers }
       );
 
@@ -242,25 +242,25 @@ describe('GET /api/devices/:id/readings - Integration', () => {
 
     it('should return 404 for disabled device', async () => {
       const response = await fetch(
-        `${API_URL}/api/devices/device-003/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature&level=day`,
+        `${API_URL}/api/devices/device-003/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&types=temperature&level=day`,
         { headers }
       );
 
       expect(response.status).toBe(404);
     });
 
-    it('should return 400 for missing startTime', async () => {
+    it('should return 400 for missing startDate', async () => {
       const response = await fetch(
-        `${API_URL}/api/devices/device-001/readings?endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature&level=day`,
+        `${API_URL}/api/devices/device-001/readings?endDate=${toDateString(dateRanges.yesterday.end)}&types=temperature&level=day`,
         { headers }
       );
 
       expect(response.status).toBe(400);
     });
 
-    it('should return 400 for missing endTime', async () => {
+    it('should return 400 for missing endDate', async () => {
       const response = await fetch(
-        `${API_URL}/api/devices/device-001/readings?startTime=${dateRanges.yesterday.start.toISOString()}&types=temperature&level=day`,
+        `${API_URL}/api/devices/device-001/readings?startDate=${toDateString(dateRanges.yesterday.start)}&types=temperature&level=day`,
         { headers }
       );
 
@@ -269,7 +269,7 @@ describe('GET /api/devices/:id/readings - Integration', () => {
 
     it('should return 400 for missing types', async () => {
       const response = await fetch(
-        `${API_URL}/api/devices/device-001/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&level=day`,
+        `${API_URL}/api/devices/device-001/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&level=day`,
         { headers }
       );
 
@@ -287,7 +287,7 @@ describe('GET /api/devices/:id/readings - Integration', () => {
 
     it('should return 400 when startTime > endTime', async () => {
       const response = await fetch(
-        `${API_URL}/api/devices/device-001/readings?startTime=2026-02-12T10:00:00.000Z&endTime=2026-02-09T00:00:00.000Z&types=temperature&level=day`,
+        `${API_URL}/api/devices/device-001/readings?startDate=2026-02-12&endDate=2026-02-09&types=temperature&level=day`,
         { headers }
       );
 
@@ -298,7 +298,7 @@ describe('GET /api/devices/:id/readings - Integration', () => {
   describe('Authentication', () => {
     it('should return 401 without auth token', async () => {
       const response = await fetch(
-        `${API_URL}/api/devices/device-001/readings?startTime=${dateRanges.yesterday.start.toISOString()}&endTime=${dateRanges.yesterday.end.toISOString()}&types=temperature&level=day`
+        `${API_URL}/api/devices/device-001/readings?startDate=${toDateString(dateRanges.yesterday.start)}&endDate=${toDateString(dateRanges.yesterday.end)}&types=temperature&level=day`
       );
 
       expect(response.status).toBe(401);
