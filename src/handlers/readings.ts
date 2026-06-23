@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { getDeviceReadings, getAllReadings, addDeviceReading } from '../data/readings';
 import { isHttpError } from '../lib/errors';
 import { sensorTypes } from '../api-types';
+import type { ReadingRange } from '../api-types';
 
 const DateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
   message: 'Expected date in YYYY-MM-DD format',
@@ -19,17 +20,8 @@ const TypesParamSchema = z
     z.array(z.enum(sensorTypes))
   );
 
-const TimeRangeShape = {
-  level: z.literal('30 minutes'),
-  startTime: z.string().datetime(),
-  endTime: z.string().datetime(),
-};
-
-const DateRangeShape = {
-  level: z.enum(['day', 'week', 'month']),
-  startDate: DateStringSchema,
-  endDate: DateStringSchema,
-};
+const LevelSchema = z.enum(['30 minutes', 'day', 'week', 'month']);
+const DateLevelSchema = z.enum(['day', 'week', 'month']);
 
 const isValidTimeRange = (data: { startTime: string; endTime: string }): boolean => {
   const start = new Date(data.startTime);
@@ -50,43 +42,106 @@ const dateRangeError = {
   path: ['startDate'],
 };
 
-const GetDeviceReadingsSchema = z.union([
-  z
-    .object({
-      ...TimeRangeShape,
-      types: TypesParamSchema,
-    })
-    .strict()
-    .refine(isValidTimeRange, timeRangeError),
-  z
-    .object({
-      ...DateRangeShape,
-      types: TypesParamSchema,
-    })
-    .strict()
-    .refine(isValidDateRange, dateRangeError),
-]);
+const addRangeValidationIssue = (
+  ctx: z.RefinementCtx,
+  message: string,
+  path: string[]
+) => {
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    message,
+    path,
+  });
+};
 
-const GetAllReadingsSchema = z.union([
-  z
-    .object({
-      ...TimeRangeShape,
-      type: z.enum(sensorTypes),
-      limit: z.coerce.number().int().min(1).max(100).default(100),
-      offset: z.coerce.number().int().min(0).default(0),
-    })
-    .strict()
-    .refine(isValidTimeRange, timeRangeError),
-  z
-    .object({
-      ...DateRangeShape,
-      type: z.enum(sensorTypes),
-      limit: z.coerce.number().int().min(1).max(100).default(100),
-      offset: z.coerce.number().int().min(0).default(0),
-    })
-    .strict()
-    .refine(isValidDateRange, dateRangeError),
-]);
+const validateRangeForLevel = (
+  data: {
+    level: '30 minutes' | 'day' | 'week' | 'month';
+    startTime?: string;
+    endTime?: string;
+    startDate?: string;
+    endDate?: string;
+  },
+  ctx: z.RefinementCtx
+) => {
+  if (data.level === '30 minutes') {
+    if (!data.startTime || !data.endTime) {
+      addRangeValidationIssue(
+        ctx,
+        'level=30 minutes requires startTime and endTime',
+        ['startTime']
+      );
+      return;
+    }
+
+    if (!isValidTimeRange({ startTime: data.startTime, endTime: data.endTime })) {
+      addRangeValidationIssue(ctx, timeRangeError.message, timeRangeError.path);
+    }
+
+    return;
+  }
+
+  if (!data.startDate || !data.endDate) {
+    addRangeValidationIssue(
+      ctx,
+      `level=${data.level} requires startDate and endDate`,
+      ['startDate']
+    );
+    return;
+  }
+
+  if (!isValidDateRange({ startDate: data.startDate, endDate: data.endDate })) {
+    addRangeValidationIssue(ctx, dateRangeError.message, dateRangeError.path);
+  }
+};
+
+const GetDeviceReadingsSchema = z
+  .object({
+    level: LevelSchema,
+    startTime: z.string().datetime().optional(),
+    endTime: z.string().datetime().optional(),
+    startDate: DateStringSchema.optional(),
+    endDate: DateStringSchema.optional(),
+    types: TypesParamSchema,
+  })
+  .strict()
+  .superRefine(validateRangeForLevel);
+
+const GetAllReadingsSchema = z
+  .object({
+    level: LevelSchema,
+    startTime: z.string().datetime().optional(),
+    endTime: z.string().datetime().optional(),
+    startDate: DateStringSchema.optional(),
+    endDate: DateStringSchema.optional(),
+    type: z.enum(sensorTypes),
+    limit: z.coerce.number().int().min(1).max(100).default(100),
+    offset: z.coerce.number().int().min(0).default(0),
+  })
+  .strict()
+  .superRefine(validateRangeForLevel);
+
+const getReadingRange = (query: {
+  level: '30 minutes' | 'day' | 'week' | 'month';
+  startTime?: string;
+  endTime?: string;
+  startDate?: string;
+  endDate?: string;
+}): ReadingRange => {
+  if (query.level === '30 minutes') {
+    return {
+      level: query.level,
+      startTime: query.startTime!,
+      endTime: query.endTime!,
+    };
+  }
+
+  return {
+    level: query.level,
+    startDate: query.startDate!,
+    endDate: query.endDate!,
+  };
+};
 
 const AddReadingSchema = z
   .object({
@@ -126,10 +181,11 @@ export async function getDeviceReadingsHandler(req: Request, res: Response) {
 
     // Parse and validate query parameters
     const query = GetDeviceReadingsSchema.parse(req.query);
+    const range = getReadingRange(query);
 
     const result = await getDeviceReadings({
       deviceId,
-      ...query,
+      ...range,
       types: query.types,
     });
 
@@ -154,9 +210,10 @@ export async function getAllReadingsHandler(req: Request, res: Response) {
   try {
     // Parse query parameters
     const query = GetAllReadingsSchema.parse(req.query);
+    const range = getReadingRange(query);
 
     const result = await getAllReadings({
-      ...query,
+      ...range,
       type: query.type,
       limit: query.limit,
       offset: query.offset,
