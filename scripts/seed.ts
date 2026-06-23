@@ -2,6 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { TABLES } from '../src/config/constants';
 import { hashPassword } from '../src/lib/password';
+import { updateReadingRollups } from '../src/data/reading-rollups';
 
 const client = new DynamoDBClient({
   endpoint: 'http://localhost:8000',
@@ -280,6 +281,16 @@ export async function seedData(fixedDate: Date) {
     );
   }
   console.log('✓ Seeded 3 devices');
+
+  const devicesById = new Map(devices.map((device) => [device.id, device]));
+
+  for (const reading of allReadings) {
+    const device = devicesById.get(reading.deviceId);
+    if (!device) continue;
+
+    await updateReadingRollups(reading, device.timezone);
+  }
+  console.log('✓ Seeded reading rollups');
 
   // ============================================
   // SEED USER

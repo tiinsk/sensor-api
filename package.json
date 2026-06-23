@@ -16,6 +16,8 @@
     "tables:create": "dotenv -c -- node_modules/.bin/ts-node scripts/create-tables-local.ts",
     "seed:local": "dotenv -c -- node_modules/.bin/ts-node scripts/seed-local.ts",
     "seed:test": "dotenv -c -- node_modules/.bin/ts-node scripts/seed-test.ts",
+    "backfill:rollups": "dotenv -c -- node_modules/.bin/ts-node scripts/backfill-rollups.ts",
+    "backfill:rollups:prod": "dotenv -e .env.production -- node_modules/.bin/ts-node scripts/backfill-rollups.ts",
     "sam:env": "dotenv -c -- node_modules/.bin/ts-node scripts/generate-sam-env.ts",
     "create:user": "dotenv -c -- node_modules/.bin/ts-node scripts/create-user.ts",
     "create:api-key": "dotenv -c -- node_modules/.bin/ts-node scripts/create-api-key.ts",
@@ -30,6 +32,7 @@
     "test:setup": "NODE_ENV=test dotenv -c -- node_modules/.bin/ts-node scripts/setup-integration-tests.ts",
     "test:compatibility": "NODE_ENV=test dotenv -c -- jest tests/compatibility",
     "test:integration": "NODE_ENV=test dotenv -c -- jest tests/integration",
+    "test:rollups:local": "RUN_ROLLUP_EQUIVALENCE_TEST=true NODE_ENV=development dotenv -c -- jest tests/integration/reading-rollup-equivalence.test.ts --runInBand",
     "test:unit": "NODE_ENV=test dotenv -c -- jest tests/unit"
   },
   "author": "Tiina Koskiranta",

@@ -106,6 +106,59 @@ describe('GET /api/devices/:id/readings - Integration', () => {
       expect(humidityReadings!.values[0].min).toBe(40);
       expect(humidityReadings!.values[0].max).toBe(60);
     });
+
+    it('should return sparse rollup data without inventing buckets for missing sensor fields', async () => {
+      const baseDate = dateRanges.dayBeforeYesterday.start;
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9997,
+        deviceName: 'Sparse Rollup Test Device',
+        readings: [
+          {
+            temperature: 20,
+            humidity: 40,
+            timestamp: new Date(new Date(baseDate).setUTCHours(12, 0, 0, 0)).toISOString(),
+          },
+          {
+            temperature: 24,
+            timestamp: new Date(new Date(baseDate).setUTCHours(12, 10, 0, 0)).toISOString(),
+          },
+        ],
+        headers,
+        createdDeviceIds,
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/devices/${deviceId}/readings?startTime=${dateRanges.dayBeforeYesterday.start.toISOString()}&endTime=${dateRanges.dayBeforeYesterday.end.toISOString()}&types=temperature,humidity,pressure&level=${encodeURIComponent('30 minutes')}`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+
+      const data = (await response.json()) as DeviceReadingsResponse;
+      const temperatureReadings = data.values.find((value) => value.type === 'temperature');
+      const humidityReadings = data.values.find((value) => value.type === 'humidity');
+      const pressureReadings = data.values.find((value) => value.type === 'pressure');
+
+      expect(temperatureReadings).toBeDefined();
+      expect(humidityReadings).toBeDefined();
+      expect(pressureReadings).toBeDefined();
+
+      expect(temperatureReadings!.values).toEqual([
+        expect.objectContaining({
+          avg: 22,
+          min: 20,
+          max: 24,
+        }),
+      ]);
+      expect(humidityReadings!.values).toEqual([
+        expect.objectContaining({
+          avg: 40,
+          min: 40,
+          max: 40,
+        }),
+      ]);
+      expect(pressureReadings!.values).toEqual([]);
+    });
   });
 
   describe('Time Bucketing', () => {

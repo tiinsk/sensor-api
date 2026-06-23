@@ -118,6 +118,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Month Bucket Test Device',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9997,
         }),
@@ -177,7 +178,7 @@ describe('GET /api/readings - Integration', () => {
 
     it('should return all 12 month buckets for full year 2025 seed data', async () => {
       const response = await fetch(
-        `${API_URL}/api/readings?startTime=${dateRanges.year2025.start.toISOString()}&endTime=${dateRanges.year2025.end.toISOString()}&type=temperature&level=month&limit=10&offset=0`,
+        `${API_URL}/api/readings?startTime=${dateRanges.year2025.start.toISOString()}&endTime=${dateRanges.year2025.end.toISOString()}&type=temperature&level=month&timezone=UTC&limit=10&offset=0`,
         { headers }
       );
 
@@ -201,6 +202,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Week Bucket Test Device',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9996,
         }),
@@ -267,6 +269,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Bucket Boundary Test',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9996,
         }),
@@ -347,6 +350,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Day Boundary Test',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9995,
         }),
@@ -418,6 +422,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Isolation Device 1',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9994,
         }),
@@ -431,6 +436,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Isolation Device 2',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9993,
         }),
@@ -500,6 +506,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Empty Results Device',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9992,
         }),
@@ -538,6 +545,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Ordering Test Device',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9991,
         }),
@@ -612,6 +620,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Time Filter Test Device',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9997,
         }),
@@ -672,6 +681,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Humidity Test Device',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9996,
         }),
@@ -725,6 +735,7 @@ describe('GET /api/readings - Integration', () => {
           name: 'Pressure Test Device',
           location: { x: 0, y: 0, type: null },
           type: 'ruuvi',
+          timezone: 'UTC',
           disabled: false,
           order: 9995,
         }),
@@ -895,6 +906,7 @@ describe('GET /api/readings - Integration', () => {
     it('day level: readings on same UTC day fall into separate Helsinki day buckets', async () => {
       const deviceId = await createTestDeviceWithReadings({
         deviceOrder: 9880,
+        timezone: 'Europe/Helsinki',
         readings: [
           { timestamp: HELSINKI_FEB_10, temperature: 10 }, // 23:59:59 EET Feb 10 → Helsinki day Feb 10
           { timestamp: HELSINKI_FEB_11, temperature: 20 }, // 00:00:00 EET Feb 11 → Helsinki day Feb 11
@@ -964,6 +976,7 @@ describe('GET /api/readings - Integration', () => {
 
       const deviceId = await createTestDeviceWithReadings({
         deviceOrder: 9878,
+        timezone: 'Europe/Helsinki',
         readings: [
           { timestamp: '2026-02-08T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Sun Feb 8 → week of Mon Feb 2
           { timestamp: '2026-02-08T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Mon Feb 9 → week of Mon Feb 9
@@ -1030,6 +1043,7 @@ describe('GET /api/readings - Integration', () => {
 
       const deviceId = await createTestDeviceWithReadings({
         deviceOrder: 9876,
+        timezone: 'Europe/Helsinki',
         readings: [
           { timestamp: '2026-01-31T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET Jan 31 → Helsinki month January
           { timestamp: '2026-01-31T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET Feb 1  → Helsinki month February
@@ -1109,6 +1123,7 @@ describe('GET /api/readings - Integration', () => {
         // Both should land in the March 30 Helsinki bucket: 2025-03-29T22:00:00.000Z
         const deviceId = await createTestDeviceWithReadings({
           deviceOrder: 9870,
+          timezone: 'Europe/Helsinki',
           readings: [
             { timestamp: '2025-03-30T00:30:00.000Z', temperature: 10 }, // 02:30 EET, before spring forward
             { timestamp: '2025-03-30T01:30:00.000Z', temperature: 20 }, // 04:30 EEST, after spring forward
@@ -1139,6 +1154,7 @@ describe('GET /api/readings - Integration', () => {
         // First reading of March 31 Helsinki: 2025-03-30T21:00:00Z = 00:00:00 EEST March 31
         const deviceId = await createTestDeviceWithReadings({
           deviceOrder: 9869,
+          timezone: 'Europe/Helsinki',
           readings: [
             { timestamp: '2025-03-30T20:59:59.000Z', temperature: 10 }, // 23:59:59 EEST → March 30 Helsinki
             { timestamp: '2025-03-30T21:00:00.000Z', temperature: 20 }, // 00:00:00 EEST → March 31 Helsinki
@@ -1176,6 +1192,7 @@ describe('GET /api/readings - Integration', () => {
         // Both should land in the October 26 Helsinki bucket: 2025-10-25T21:00:00.000Z
         const deviceId = await createTestDeviceWithReadings({
           deviceOrder: 9868,
+          timezone: 'Europe/Helsinki',
           readings: [
             { timestamp: '2025-10-26T00:30:00.000Z', temperature: 10 }, // 03:30 EEST, first occurrence
             { timestamp: '2025-10-26T01:30:00.000Z', temperature: 20 }, // 03:30 EET, repeated hour
@@ -1206,6 +1223,7 @@ describe('GET /api/readings - Integration', () => {
         // First reading of October 27 Helsinki: 2025-10-26T22:00:00Z = 00:00:00 EET October 27
         const deviceId = await createTestDeviceWithReadings({
           deviceOrder: 9867,
+          timezone: 'Europe/Helsinki',
           readings: [
             { timestamp: '2025-10-26T21:59:59.000Z', temperature: 10 }, // 23:59:59 EET → October 26 Helsinki
             { timestamp: '2025-10-26T22:00:00.000Z', temperature: 20 }, // 00:00:00 EET → October 27 Helsinki

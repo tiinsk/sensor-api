@@ -23,6 +23,7 @@ export function generateTestDeviceId(): string {
 export async function createTestDeviceWithReadings(opts: {
   deviceOrder: number;
   deviceName?: string;
+  timezone?: string;
   readings: Array<{ timestamp: string; temperature: number; humidity?: number; pressure?: number; battery?: number }>;
   headers: RequestHeaders;
   createdDeviceIds: string[];
@@ -38,6 +39,7 @@ export async function createTestDeviceWithReadings(opts: {
       name: opts.deviceName ?? 'Test Device',
       location: { x: 0, y: 0, type: null },
       type: 'ruuvi',
+      timezone: opts.timezone ?? 'UTC',
       disabled: false,
       order: opts.deviceOrder,
     }),

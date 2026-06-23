@@ -18,7 +18,7 @@ import { Reading } from '../db-types';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { airQualityFromPm25Co2 } from '../utils/air-quality';
 import { getAllDevices } from './devices';
-import { updateReadingRollups } from './reading-rollups';
+import { queryAggregatedRollups, queryAggregatedRollupsByType, updateReadingRollups } from './reading-rollups';
 
 const docClient = createDynamoDBClient();
 
@@ -66,26 +66,20 @@ export async function getDeviceReadings(params: {
   endTime: string;
   types: SensorType[];
   level: TimeLevel;
-  timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to 'UTC'
+  timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to device timezone
 }): Promise<DeviceReadingsResponse> {
   // Verify device exists
-  await getDevice(params.deviceId);
+  const device = await getDevice(params.deviceId);
 
-  // Query readings in time range
-  const readings = await queryAllReadingsInRange({
+  const timezone = params.timezone || device.timezone;
+  const aggregatedByType = await queryAggregatedRollupsByType({
     deviceId: params.deviceId,
     startTime: params.startTime,
     endTime: params.endTime,
+    types: params.types,
+    level: params.level,
+    timezone,
   });
-
-  // Aggregate readings by time level and type
-  // NOTE: In PostgreSQL this was done with date_trunc/date_bin and GROUP BY
-  // In DynamoDB, we do it in application code
-  const timezone = params.timezone || 'UTC';
-  const aggregatedByType = params.types.map((type) => ({
-    type,
-    values: aggregateReadings(readings, type, params.level, timezone),
-  }));
 
   return {
     id: params.deviceId,
@@ -103,7 +97,7 @@ export async function getAllReadings(params: {
   level: TimeLevel;
   limit: number;
   offset: number;
-  timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to 'UTC'
+  timezone?: string; // IANA timezone (e.g., 'Europe/Helsinki'), defaults to each device timezone
 }): Promise<AllReadingsResponse> {
   const devicesResult = await getAllDevices({
     limit: params.limit,
@@ -111,28 +105,24 @@ export async function getAllReadings(params: {
     includeDisabled: false,
   });
 
-  // Query readings for each device
   const readingsPromises = devicesResult.values.map(async (device) => {
-    const readings = await queryAllReadingsInRange({
+    const timezone = params.timezone || device.timezone;
+    const values = await queryAggregatedRollups({
       deviceId: device.id,
       startTime: params.startTime,
       endTime: params.endTime,
+      type: params.type,
+      level: params.level,
+      timezone,
     });
 
     return {
-      deviceId: device.id,
-      readings,
+      id: device.id,
+      values,
     };
   });
 
-  const allReadings = await Promise.all(readingsPromises);
-
-  // Aggregate readings
-  const timezone = params.timezone || 'UTC';
-  const values = allReadings.map((deviceReadings) => ({
-    id: deviceReadings.deviceId,
-    values: aggregateReadings(deviceReadings.readings, params.type, params.level, timezone),
-  }));
+  const values = await Promise.all(readingsPromises);
 
   return {
     count: devicesResult.count,
@@ -210,11 +200,11 @@ export async function addDeviceReading(params: {
  * Aggregate readings by time level
  * NOTE: This is done in application code since DynamoDB doesn't have GROUP BY
  */
-function aggregateReadings(
-  readings: Reading[],
-  type: SensorType,
-  level: TimeLevel,
-  timezone: string
+export function aggregateReadings(
+    readings: Reading[],
+    type: SensorType,
+    level: TimeLevel,
+    timezone: string
 ): TimedAvgMinMax[] {
   if (readings.length === 0) return [];
 
