@@ -8,52 +8,105 @@ import { getDeviceReadings, getAllReadings, addDeviceReading } from '../data/rea
 import { isHttpError } from '../lib/errors';
 import { sensorTypes } from '../api-types';
 
-const GetDeviceReadingsSchema = z
-  .object({
-    startTime: z.string().datetime(),
-    endTime: z.string().datetime(),
-    types: z
-      .string()
-      .transform((str) => str.split(',').map((t) => t.trim()))
-      .pipe(
-        z.array(z.enum(sensorTypes))
-      ),
-    level: z.enum(['30 minutes', 'day', 'week', 'month']),
-    timezone: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      const start = new Date(data.startTime);
-      const end = new Date(data.endTime);
-      return start <= end;
-    },
-    {
-      message: 'startTime must be before or equal to endTime',
-      path: ['startTime'],
-    }
+const DateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
+  message: 'Expected date in YYYY-MM-DD format',
+});
+
+const TypesParamSchema = z
+  .string()
+  .transform((str) => str.split(',').map((t) => t.trim()))
+  .pipe(
+    z.array(z.enum(sensorTypes))
   );
 
-const GetAllReadingsSchema = z
-  .object({
-    startTime: z.string().datetime(),
-    endTime: z.string().datetime(),
-    type: z.enum(sensorTypes),
-    level: z.enum(['30 minutes', 'day', 'week', 'month']),
-    limit: z.coerce.number().int().min(1).max(100).default(100),
-    offset: z.coerce.number().int().min(0).default(0),
-    timezone: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      const start = new Date(data.startTime);
-      const end = new Date(data.endTime);
-      return start <= end;
-    },
-    {
-      message: 'startTime must be before or equal to endTime',
-      path: ['startTime'],
-    }
-  );
+const TimeRangeShape = {
+  level: z.literal('30 minutes'),
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
+};
+
+const DateRangeShape = {
+  level: z.enum(['day', 'week', 'month']),
+  startDate: DateStringSchema,
+  endDate: DateStringSchema,
+};
+
+const isValidTimeRange = (data: { startTime: string; endTime: string }): boolean => {
+  const start = new Date(data.startTime);
+  const end = new Date(data.endTime);
+  return start <= end;
+};
+
+const isValidDateRange = (data: { startDate: string; endDate: string }): boolean =>
+  data.startDate <= data.endDate;
+
+const timeRangeError = {
+  message: 'startTime must be before or equal to endTime',
+  path: ['startTime'],
+};
+
+const dateRangeError = {
+  message: 'startDate must be before or equal to endDate',
+  path: ['startDate'],
+};
+
+const GetDeviceReadingsSchema = z.union([
+  z
+    .object({
+      ...TimeRangeShape,
+      types: TypesParamSchema,
+    })
+    .strict()
+    .refine(isValidTimeRange, timeRangeError),
+  z
+    .object({
+      ...DateRangeShape,
+      types: TypesParamSchema,
+    })
+    .strict()
+    .refine(isValidDateRange, dateRangeError),
+]);
+
+const GetAllReadingsSchema = z.union([
+  z
+    .object({
+      ...TimeRangeShape,
+      type: z.enum(sensorTypes),
+      limit: z.coerce.number().int().min(1).max(100).default(100),
+      offset: z.coerce.number().int().min(0).default(0),
+    })
+    .strict()
+    .refine(isValidTimeRange, timeRangeError),
+  z
+    .object({
+      ...DateRangeShape,
+      type: z.enum(sensorTypes),
+      limit: z.coerce.number().int().min(1).max(100).default(100),
+      offset: z.coerce.number().int().min(0).default(0),
+    })
+    .strict()
+    .refine(isValidDateRange, dateRangeError),
+]);
+
+type ParsedReadingRangeQuery =
+  | { level: '30 minutes'; startTime: string; endTime: string }
+  | { level: 'day' | 'week' | 'month'; startDate: string; endDate: string };
+
+const toLegacyTimeRange = (
+  query: ParsedReadingRangeQuery
+): { startTime: string; endTime: string } => {
+  if (query.level === '30 minutes') {
+    return {
+      startTime: query.startTime,
+      endTime: query.endTime,
+    };
+  }
+
+  return {
+    startTime: `${query.startDate}T00:00:00.000Z`,
+    endTime: `${query.endDate}T23:59:59.999Z`,
+  };
+};
 
 const AddReadingSchema = z
   .object({
@@ -94,13 +147,15 @@ export async function getDeviceReadingsHandler(req: Request, res: Response) {
     // Parse and validate query parameters
     const query = GetDeviceReadingsSchema.parse(req.query);
 
+    //TODO: remove this next
+    const range = toLegacyTimeRange(query);
+
     const result = await getDeviceReadings({
       deviceId,
-      startTime: query.startTime,
-      endTime: query.endTime,
+      startTime: range.startTime,
+      endTime: range.endTime,
       types: query.types,
       level: query.level,
-      timezone: query.timezone,
     });
 
     return res.json(result);
@@ -125,14 +180,16 @@ export async function getAllReadingsHandler(req: Request, res: Response) {
     // Parse query parameters
     const query = GetAllReadingsSchema.parse(req.query);
 
+    //TODO: remove this next
+    const range = toLegacyTimeRange(query);
+
     const result = await getAllReadings({
-      startTime: query.startTime,
-      endTime: query.endTime,
+      startTime: range.startTime,
+      endTime: range.endTime,
       type: query.type,
       level: query.level,
       limit: query.limit,
       offset: query.offset,
-      timezone: query.timezone,
     });
 
     return res.json(result);
