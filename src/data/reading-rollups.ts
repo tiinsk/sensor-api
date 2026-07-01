@@ -1,5 +1,5 @@
 import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 import { sensorTypes } from '../api-types';
 import { TABLES } from '../config/constants';
 import { createDynamoDBClient } from '../lib/db-client';
@@ -31,11 +31,10 @@ export const getDayBucketStart = (timestamp: string, timezone: string): string =
 
 export const getThirtyMinuteBucketStart = (
   timestamp: string,
-  timezone: string
 ): string => {
-  const zonedDate = toZonedTime(new Date(timestamp), timezone);
-  zonedDate.setMinutes(Math.floor(zonedDate.getMinutes() / 30) * 30, 0, 0);
-  return fromZonedTime(zonedDate, timezone).toISOString();
+  const date = new Date(timestamp);
+  date.setUTCMinutes(Math.floor(date.getUTCMinutes() / 30) * 30, 0, 0);
+  return date.toISOString();
 };
 
 export const getRollupBucketStart = (
@@ -45,7 +44,7 @@ export const getRollupBucketStart = (
 ): string =>
   level === 'day'
     ? getDayBucketStart(timestamp, timezone)
-    : getThirtyMinuteBucketStart(timestamp, timezone);
+    : getThirtyMinuteBucketStart(timestamp);
 
 export const getRollupBucketKey = (
   timestamp: string,

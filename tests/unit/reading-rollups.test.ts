@@ -17,6 +17,16 @@ describe('reading rollups', () => {
     ).toBe('30m#2026-06-22T10:30:00.000Z');
   });
 
+  it('keeps 30-minute bucket keys distinct during DST fallback', () => {
+    expect(
+      getRollupBucketKey('2022-10-30T00:09:51.282Z', '30m', 'Europe/Helsinki')
+    ).toBe('30m#2022-10-30T00:00:00.000Z');
+
+    expect(
+      getRollupBucketKey('2022-10-30T01:09:51.411Z', '30m', 'Europe/Helsinki')
+    ).toBe('30m#2022-10-30T01:00:00.000Z');
+  });
+
   it('uses device timezone for day buckets', () => {
     // 2026-06-21T21:30Z is 2026-06-22 00:30 in Europe/Helsinki.
     expect(
