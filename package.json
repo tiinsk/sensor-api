@@ -18,6 +18,7 @@
     "seed:test": "dotenv -c -- node_modules/.bin/ts-node scripts/seed-test.ts",
     "backfill:rollups": "dotenv -c -- node_modules/.bin/ts-node scripts/backfill-rollups.ts",
     "backfill:rollups:prod": "dotenv -e .env.production -- node_modules/.bin/ts-node scripts/backfill-rollups.ts",
+    "backfill:rollups:test": "NODE_ENV=test dotenv -c -- node_modules/.bin/ts-node scripts/backfill-rollups.ts",
     "sam:env": "dotenv -c -- node_modules/.bin/ts-node scripts/generate-sam-env.ts",
     "create:user": "dotenv -c -- node_modules/.bin/ts-node scripts/create-user.ts",
     "create:api-key": "dotenv -c -- node_modules/.bin/ts-node scripts/create-api-key.ts",
