@@ -6,42 +6,32 @@ import { Request, Response } from 'lambda-api';
 import { z } from 'zod';
 import { getAllStatistics, getDeviceStatistics } from '../data/statistics';
 import { isHttpError } from '../lib/errors';
-
-const GetAllStatisticsSchema = z
-  .object({
-    startTime: z.string().datetime(),
-    endTime: z.string().datetime(),
-    limit: z.coerce.number().int().min(1).max(100).default(100),
-    offset: z.coerce.number().int().min(0).default(0),
-  })
-  .refine(
-    (data) => {
-      const start = new Date(data.startTime);
-      const end = new Date(data.endTime);
-      return start <= end;
-    },
-    {
-      message: 'startTime must be before or equal to endTime',
-      path: ['startTime'],
-    }
-  );
+import {
+  DateStringSchema,
+  validateStatisticsRange,
+} from '../lib/range-validation';
 
 const GetDeviceStatisticsSchema = z
   .object({
-    startTime: z.string().datetime(),
-    endTime: z.string().datetime(),
+    startTime: z.string().datetime().optional(),
+    endTime: z.string().datetime().optional(),
+    startDate: DateStringSchema.optional(),
+    endDate: DateStringSchema.optional(),
   })
-  .refine(
-    (data) => {
-      const start = new Date(data.startTime);
-      const end = new Date(data.endTime);
-      return start <= end;
-    },
-    {
-      message: 'startTime must be before or equal to endTime',
-      path: ['startTime'],
-    }
-  );
+  .strict()
+  .superRefine(validateStatisticsRange);
+
+const GetAllStatisticsSchema = z
+  .object({
+    startTime: z.string().datetime().optional(),
+    endTime: z.string().datetime().optional(),
+    startDate: DateStringSchema.optional(),
+    endDate: DateStringSchema.optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(100),
+    offset: z.coerce.number().int().min(0).default(0),
+  })
+  .strict()
+  .superRefine(validateStatisticsRange);
 
 /**
  * GET /api/statistics
@@ -49,7 +39,6 @@ const GetDeviceStatisticsSchema = z
  */
 export async function getAllStatisticsHandler(req: Request, res: Response) {
   try {
-    // Parse query parameters
     const query = GetAllStatisticsSchema.parse(req.query);
 
     const result = await getAllStatistics(query);
@@ -78,7 +67,6 @@ export async function getDeviceStatisticsHandler(req: Request, res: Response) {
       return res.status(400).json({ error: 'Device ID is required' });
     }
 
-    // Parse query parameters
     const query = GetDeviceStatisticsSchema.parse(req.query);
 
     const result = await getDeviceStatistics({

@@ -36,6 +36,16 @@ export type ReadingRange =
       endDate: string;
     };
 
+export type StatisticsRange =
+  | {
+      startTime: string;
+      endTime: string;
+    }
+  | {
+      startDate: string;
+      endDate: string;
+    };
+
 export interface TimedAvgMinMax {
   timestamp: string;
   avg: number;
@@ -81,6 +91,7 @@ export interface SensorStatistics {
   temperature: AvgMinMax;
   humidity: AvgMinMax;
   pressure: AvgMinMax;
+  battery: AvgMinMax;
   pm25: AvgMinMax;
   co2: AvgMinMax;
   voc: AvgMinMax;

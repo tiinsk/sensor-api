@@ -6,12 +6,12 @@ import { Request, Response } from 'lambda-api';
 import { z } from 'zod';
 import { getDeviceReadings, getAllReadings, addDeviceReading } from '../data/readings';
 import { isHttpError } from '../lib/errors';
+import {
+  DateStringSchema,
+  validateRangeForLevel,
+} from '../lib/range-validation';
 import { sensorTypes } from '../api-types';
 import type { ReadingRange } from '../api-types';
-
-const DateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-  message: 'Expected date in YYYY-MM-DD format',
-});
 
 const TypesParamSchema = z
   .string()
@@ -22,78 +22,6 @@ const TypesParamSchema = z
 
 const LevelSchema = z.enum(['30 minutes', 'day', 'week', 'month']);
 const DateLevelSchema = z.enum(['day', 'week', 'month']);
-
-const isValidTimeRange = (data: { startTime: string; endTime: string }): boolean => {
-  const start = new Date(data.startTime);
-  const end = new Date(data.endTime);
-  return start <= end;
-};
-
-const isValidDateRange = (data: { startDate: string; endDate: string }): boolean =>
-  data.startDate <= data.endDate;
-
-const timeRangeError = {
-  message: 'startTime must be before or equal to endTime',
-  path: ['startTime'],
-};
-
-const dateRangeError = {
-  message: 'startDate must be before or equal to endDate',
-  path: ['startDate'],
-};
-
-const addRangeValidationIssue = (
-  ctx: z.RefinementCtx,
-  message: string,
-  path: string[]
-) => {
-  ctx.addIssue({
-    code: z.ZodIssueCode.custom,
-    message,
-    path,
-  });
-};
-
-const validateRangeForLevel = (
-  data: {
-    level: '30 minutes' | 'day' | 'week' | 'month';
-    startTime?: string;
-    endTime?: string;
-    startDate?: string;
-    endDate?: string;
-  },
-  ctx: z.RefinementCtx
-) => {
-  if (data.level === '30 minutes') {
-    if (!data.startTime || !data.endTime) {
-      addRangeValidationIssue(
-        ctx,
-        'level=30 minutes requires startTime and endTime',
-        ['startTime']
-      );
-      return;
-    }
-
-    if (!isValidTimeRange({ startTime: data.startTime, endTime: data.endTime })) {
-      addRangeValidationIssue(ctx, timeRangeError.message, timeRangeError.path);
-    }
-
-    return;
-  }
-
-  if (!data.startDate || !data.endDate) {
-    addRangeValidationIssue(
-      ctx,
-      `level=${data.level} requires startDate and endDate`,
-      ['startDate']
-    );
-    return;
-  }
-
-  if (!isValidDateRange({ startDate: data.startDate, endDate: data.endDate })) {
-    addRangeValidationIssue(ctx, dateRangeError.message, dateRangeError.path);
-  }
-};
 
 const GetDeviceReadingsSchema = z
   .object({

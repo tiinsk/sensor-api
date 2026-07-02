@@ -1,5 +1,6 @@
 import {
   aggregateRollups,
+  aggregateRollupsToStatistics,
   getRollupBucketKey,
   getRollupBucketStart,
   mergeRollupStats,
@@ -34,19 +35,6 @@ describe('reading rollups', () => {
     ).toBe('day#2026-06-22');
   });
 
-  it('merges avg/min/max/count incrementally', () => {
-    const first = mergeRollupStats(undefined, { avg: 10, min: 10, max: 10, count: 1 });
-    const second = mergeRollupStats(first, { avg: 20, min: 20, max: 20, count: 1 });
-    const third = mergeRollupStats(second, { avg: 5, min: 5, max: 5, count: 1 });
-
-    expect(third).toEqual({
-      avg: 11.6667,
-      min: 5,
-      max: 20,
-      count: 3,
-    });
-  });
-
   it('combines daily rollups into month buckets with weighted averages', () => {
     const rollups: ReadingRollup[] = [
       {
@@ -75,5 +63,52 @@ describe('reading rollups', () => {
         max: 22,
       },
     ]);
+  });
+
+  it('merges avg/min/max/count incrementally', () => {
+    const first = mergeRollupStats(undefined, { avg: 10, min: 10, max: 10, count: 1 });
+    const second = mergeRollupStats(first, { avg: 20, min: 20, max: 20, count: 1 });
+    const third = mergeRollupStats(second, { avg: 5, min: 5, max: 5, count: 1 });
+
+    expect(third).toEqual({
+      avg: 11.6667,
+      min: 5,
+      max: 20,
+      count: 3,
+    });
+  });
+
+  it('aggregates rollups into sensor statistics', () => {
+    const rollups = [
+      {
+        deviceId: 'device-001',
+        bucketKey: 'day#2026-06-01',
+        level: 'day' as const,
+        bucketStart: '2026-06-01',
+        timezone: 'UTC',
+        temperature: { avg: 10, min: 8, max: 12, count: 2 },
+        humidity: { avg: 30, min: 30, max: 30, count: 1 },
+      },
+      {
+        deviceId: 'device-001',
+        bucketKey: 'day#2026-06-02',
+        level: 'day' as const,
+        bucketStart: '2026-06-02',
+        timezone: 'UTC',
+        temperature: { avg: 20, min: 18, max: 22, count: 1 },
+      },
+    ];
+
+    expect(aggregateRollupsToStatistics(rollups)).toEqual({
+      temperature: { avg: 13.3333, min: 8, max: 22 },
+      humidity: { avg: 30, min: 30, max: 30 },
+      pressure: { avg: null, min: null, max: null },
+      battery: { avg: null, min: null, max: null },
+      pm25: { avg: null, min: null, max: null },
+      co2: { avg: null, min: null, max: null },
+      voc: { avg: null, min: null, max: null },
+      nox: { avg: null, min: null, max: null },
+      airQuality: { avg: null, min: null, max: null },
+    });
   });
 });

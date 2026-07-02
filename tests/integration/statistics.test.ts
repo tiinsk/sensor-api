@@ -6,7 +6,7 @@
 import { getApiUrl } from './utils/test-config';
 import { getAuthHeaders, RequestHeaders } from './utils/auth-utils';
 import { deleteTestDevices, createTestDeviceWithReadings } from '../utils/device-helpers';
-import { getTestDateRanges } from '../utils/test-data';
+import { getTestDateRanges, toDateString } from '../utils/test-data';
 import type {
   Statistics,
   DeviceStatistics,
@@ -211,7 +211,7 @@ describe('GET /api/statistics - Integration', () => {
 
       // Query for current month (which includes yesterday)
       const monthResponse = await fetch(
-        `${API_URL}/api/devices/${deviceId}/statistics?startTime=${dateRanges.currentMonth.start.toISOString()}&endTime=${dateRanges.currentMonth.end.toISOString()}`,
+        `${API_URL}/api/devices/${deviceId}/statistics?startDate=${toDateString(dateRanges.currentMonth.start)}&endDate=${toDateString(dateRanges.currentMonth.end)}`,
         { headers }
       );
 
@@ -292,6 +292,49 @@ describe('GET /api/statistics - Integration', () => {
       );
 
       expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when startDate > endDate', async () => {
+      const response = await fetch(
+        `${API_URL}/api/statistics?startDate=2026-02-12&endDate=2026-02-09`,
+        { headers }
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 400 when mixing startTime with startDate', async () => {
+      const response = await fetch(
+        `${API_URL}/api/statistics?startTime=2026-02-12T00:00:00.000Z&endDate=2026-02-12`,
+        { headers }
+      );
+
+      expect(response.status).toBe(400);
+    });
+
+    it('should calculate statistics from day rollups with startDate/endDate', async () => {
+      const deviceId = await createTestDeviceWithReadings({
+        deviceOrder: 9982,
+        deviceName: 'Date Range Stats Device',
+        readings: [
+          { temperature: 12.0, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(8, 0, 0, 0)).toISOString() },
+          { temperature: 18.0, timestamp: new Date(new Date(dateRanges.dayBeforeYesterday.start).setUTCHours(20, 0, 0, 0)).toISOString() },
+        ],
+        headers,
+        createdDeviceIds,
+      });
+
+      const response = await fetch(
+        `${API_URL}/api/devices/${deviceId}/statistics?startDate=${toDateString(dateRanges.dayBeforeYesterday.start)}&endDate=${toDateString(dateRanges.dayBeforeYesterday.end)}`,
+        { headers }
+      );
+
+      expect(response.status).toBe(200);
+
+      const deviceStats = (await response.json()) as SingleDeviceStatistics;
+      expect(deviceStats.statistics.temperature.min).toBe(12);
+      expect(deviceStats.statistics.temperature.max).toBe(18);
+      expect(deviceStats.statistics.temperature.avg).toBe(15);
     });
   });
 

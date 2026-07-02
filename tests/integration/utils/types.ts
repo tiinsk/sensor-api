@@ -73,6 +73,7 @@ export interface DeviceStatistics {
     temperature: Statistics;
     humidity: Statistics;
     pressure: Statistics;
+    battery: Statistics;
     pm25: Statistics;
     co2: Statistics;
     voc: Statistics;
@@ -94,6 +95,7 @@ export interface SingleDeviceStatistics {
     temperature: Statistics;
     humidity: Statistics;
     pressure: Statistics;
+    battery: Statistics;
     pm25: Statistics;
     co2: Statistics;
     voc: Statistics;

@@ -4,7 +4,16 @@ import { sensorTypes } from '../api-types';
 import { TABLES } from '../config/constants';
 import { createDynamoDBClient } from '../lib/db-client';
 import { airQualityFromPm25Co2 } from '../utils/air-quality';
-import type { ReadingRange, SensorReadings, SensorType, TimedAvgMinMax, TimeLevel } from '../api-types';
+import type {
+  AvgMinMax,
+  ReadingRange,
+  SensorReadings,
+  SensorStatistics,
+  SensorType,
+  StatisticsRange,
+  TimedAvgMinMax,
+  TimeLevel,
+} from '../api-types';
 import type {
   Reading,
   ReadingRollup,
@@ -237,6 +246,57 @@ export const queryAggregatedRollups = async (params: {
   });
 
   return aggregateRollups(rollups, params.type, params.level);
+};
+
+const emptyAvgMinMax = (): AvgMinMax => ({
+  avg: null,
+  min: null,
+  max: null,
+});
+
+const toAvgMinMax = (stats: ReadingRollupStats | undefined): AvgMinMax => {
+  if (!stats || stats.count === 0) return emptyAvgMinMax();
+
+  return {
+    avg: stats.avg,
+    min: stats.min,
+    max: stats.max,
+  };
+};
+
+export const aggregateRollupsToStatistics = (
+  rollups: ReadingRollup[]
+): SensorStatistics =>
+  sensorTypes.reduce<SensorStatistics>((statistics, type) => {
+    const merged = rollups.reduce<ReadingRollupStats | undefined>(
+      (acc, rollup) => {
+        const bucketStats = rollup[type];
+        return bucketStats ? mergeRollupStats(acc, bucketStats) : acc;
+      },
+      undefined
+    );
+
+    return {
+      ...statistics,
+      [type]: toAvgMinMax(merged),
+    };
+  }, {} as SensorStatistics);
+
+export const queryStatisticsFromRollups = async (
+  params: { deviceId: string } & StatisticsRange
+): Promise<SensorStatistics> => {
+  const isTimeRange = 'startTime' in params;
+  const rollups = await queryRollupsInRange({
+    deviceId: params.deviceId,
+    startKey: isTimeRange
+      ? `30m#${getThirtyMinuteBucketStart(params.startTime)}`
+      : `day#${params.startDate}`,
+    endKey: isTimeRange
+      ? `30m#${getThirtyMinuteBucketStart(params.endTime)}`
+      : `day#${params.endDate}`,
+  });
+
+  return aggregateRollupsToStatistics(rollups);
 };
 
 export const queryAggregatedRollupsByType = async (params: {

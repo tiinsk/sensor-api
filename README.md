@@ -335,6 +335,18 @@ GET /api/readings?level=month&type=temperature&startDate=2025-01-01&endDate=2025
 - `GET /api/statistics` - Get statistics for all devices
 - `GET /api/devices/:id/statistics` - Get statistics for a device
 
+Statistics endpoints use the same range format as readings:
+
+- `startTime` and `endTime` ISO UTC datetimes query 30-minute rollups.
+- `startDate` and `endDate` calendar dates in `YYYY-MM-DD` format query day rollups.
+
+Examples:
+
+```text
+GET /api/statistics?startTime=2025-01-14T00:00:00.000Z&endTime=2025-01-14T23:59:59.999Z
+GET /api/devices/device-001/statistics?startDate=2025-01-01&endDate=2025-01-31
+```
+
 ## Deployment
 
 ### Prerequisites
