@@ -375,7 +375,7 @@ Read PRODUCTION_SETUP.md
     ```typescript
     // Current (offset-based):
     GET /api/devices?limit=10&offset=20
-    → { count: 10, totCount: 250, limit: 10, values: [...] }
+    → { count: 10, totCount: 250, offset: 10, values: [...] }
     
     // New (cursor-based):
     GET /api/devices?limit=10
@@ -398,47 +398,16 @@ Read PRODUCTION_SETUP.md
   - **Impact:** Requires frontend changes to handle cursor tokens instead of page numbers
   - **Files:** `src/data/devices.ts`, `src/data/readings.ts`, API response types, frontend pagination components
 
-- [x] **Security Best Practice: Use AWS Secrets Manager for JWT_SECRET**
-  - Current: `JWT_SECRET` stored as Lambda environment variable (visible in AWS Console)
-  - Target: Store in AWS Secrets Manager and retrieve at runtime
-  - Benefits: Automatic rotation, audit logging, encryption at rest, fine-grained access control
-  - Cost: ~$0.40/month per secret + $0.05 per 10,000 API calls
-  - Implementation example:
-    ```typescript
-    // In CDK (cdk/lib/api-stack.ts):
-    import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
-    
-    const jwtSecret = secretsmanager.Secret.fromSecretNameV2(
-      this, 
-      'JwtSecret', 
-      'sensor-api/jwt-secret'
-    );
-    
-    // Grant Lambda read access
-    jwtSecret.grantRead(apiLambda);
-    
-    // In Lambda code (src/lib/jwt.ts):
-    // Use AWS SDK to retrieve secret value at runtime
-    ```
-  - Files: `cdk/lib/api-stack.ts`, `src/lib/jwt.ts`, `src/lib/env.ts`
 - [ ] **Improve authentication security**
   - **Issue 1:** API keys never expire and can't be revoked individually (only by deleting from DB)
     - Solution: Add `expiresAt` and `revoked` fields to Auth table, check on validation
-  - **Issue 2:** JWT tokens are generated in `sensor-data-sender` repo (client-side), exposing JWT_SECRET
-    - Solution: Implement device auth flow - devices send API key, server generates and returns JWT token
-    - This keeps JWT_SECRET server-side only
-  - **Issue 3:** No API key rotation strategy
+  - **Issue 2:** No API key rotation strategy
     - Solution: Add rotation script that generates new key, marks old as deprecated with grace period
-  - Files: `src/data/auth.ts`, `src/lib/auth-middleware.ts`, `sensor-data-sender` repo
+  - Files: `src/data/auth.ts`, `src/lib/auth-middleware.ts`
 
 ### Medium Priority
 
-- [ ] **Optimize time-based aggregation for readings**
-  - Current: Query all readings, aggregate in Lambda code (slow for large datasets)
-  - Target: Pre-aggregate data into summary tables or use DynamoDB Streams
-  - Impact: Better performance for statistics/readings endpoints with long time ranges
-  - Files: `src/data/readings.ts`, potentially new aggregation tables
-- [x] **Remove all code related to device specific API keys (not in user anymore)**
+*None yet*
 
 ### Low Priority / Nice to Have
 
@@ -448,6 +417,5 @@ Read PRODUCTION_SETUP.md
 
 ## Notes
 
-- Items marked with ☑ are completed
 - Add new items as they come up during development
 - Prioritize before implementing
